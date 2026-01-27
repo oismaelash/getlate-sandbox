@@ -232,7 +232,7 @@ export default function PostsPage() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showNewForm, setShowNewForm] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [newPostContent, setNewPostContent] = useState("");
   const [newPostAccountId, setNewPostAccountId] = useState("");
   const [newPostPublishNow, setNewPostPublishNow] = useState(true);
@@ -646,7 +646,7 @@ export default function PostsPage() {
         setNewPostPublishNow(true);
         setNewPostScheduledAt("");
         setMediaFiles([]);
-        setShowNewForm(false);
+        setShowCreateModal(false);
       } else {
         const error = await res.json();
         alert(error.error || "Erro ao criar post");
@@ -719,6 +719,109 @@ export default function PostsPage() {
   }
 
   const inferredFormat = getInferredFormat();
+  const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
+
+  // Calendar state
+  const [calendarCurrentMonth, setCalendarCurrentMonth] = useState(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  });
+  const [calendarWeekStart, setCalendarWeekStart] = useState<"sun" | "mon">("sun");
+
+  const calendarMonthLabel = useMemo(() => {
+    return calendarCurrentMonth.toLocaleString("en-US", {
+      month: "long",
+      year: "numeric",
+    });
+  }, [calendarCurrentMonth]);
+
+  const postsByDate = useMemo(() => {
+    const map = new Map<string, Post[]>();
+
+    const makeKey = (d: Date) => {
+      const year = d.getFullYear();
+      const month = d.getMonth() + 1;
+      const day = d.getDate();
+      const mm = month < 10 ? `0${month}` : `${month}`;
+      const dd = day < 10 ? `0${day}` : `${day}`;
+      return `${year}-${mm}-${dd}`;
+    };
+
+    filteredPosts.forEach((post) => {
+      if (!post.scheduledFor) return;
+      const d = new Date(post.scheduledFor);
+      if (Number.isNaN(d.getTime())) return;
+      const key = makeKey(d);
+      const list = map.get(key);
+      if (list) {
+        list.push(post);
+      } else {
+        map.set(key, [post]);
+      }
+    });
+
+    return map;
+  }, [filteredPosts]);
+
+  const calendarDays = useMemo(() => {
+    const year = calendarCurrentMonth.getFullYear();
+    const month = calendarCurrentMonth.getMonth();
+
+    const firstOfMonth = new Date(year, month, 1);
+    const lastOfMonth = new Date(year, month + 1, 0);
+
+    const today = new Date();
+    const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(
+      today.getDate()
+    ).padStart(2, "0")}`;
+
+    const firstDayOfWeek = firstOfMonth.getDay(); // 0 (Sun) - 6 (Sat)
+    let offset = firstDayOfWeek;
+    if (calendarWeekStart === "mon") {
+      // convert to Monday-based index
+      offset = (firstDayOfWeek - 1 + 7) % 7;
+    }
+
+    // Start on the first day of the week that contains the 1st of the month
+    const startDate = new Date(year, month, 1 - offset);
+
+    const days: {
+      date: Date;
+      isCurrentMonth: boolean;
+      isToday: boolean;
+      posts: Post[];
+    }[] = [];
+
+    const makeKey = (d: Date) => {
+      const y = d.getFullYear();
+      const m = d.getMonth() + 1;
+      const day = d.getDate();
+      return `${y}-${String(m).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    };
+
+    // Calculate total days from startDate until the week that contains the last day of month,
+    // then round up to full weeks so grid ends exactly on that week.
+    const diffMs = lastOfMonth.getTime() - startDate.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1;
+    const totalCells = Math.ceil(diffDays / 7) * 7;
+
+    for (let i = 0; i < totalCells; i++) {
+      const d = new Date(startDate);
+      d.setDate(startDate.getDate() + i);
+
+      const key = makeKey(d);
+      const postsForDay = postsByDate.get(key) ?? [];
+
+      days.push({
+        date: d,
+        isCurrentMonth: d.getMonth() === month,
+        isToday: key === todayKey,
+        posts: postsForDay,
+      });
+    }
+
+    return days;
+  }, [calendarCurrentMonth, calendarWeekStart, postsByDate]);
 
   // Check if there are any connected accounts
   const hasConnectedAccounts = accounts.length > 0;
@@ -738,7 +841,12 @@ export default function PostsPage() {
           <div className="flex flex-col items-stretch md:items-end gap-2">
             <div className="flex bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg p-0.5 dashboard-view-toggle self-start md:self-auto">
               <button
-                className="px-2 py-1.5 rounded-md transition-all bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white"
+                onClick={() => setViewMode("list")}
+                className={`px-2 py-1.5 rounded-md transition-all ${
+                  viewMode === "list"
+                    ? "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                }`}
                 title="List view"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -746,7 +854,12 @@ export default function PostsPage() {
                 </svg>
               </button>
               <button
-                className="px-2 py-1.5 rounded-md transition-all text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                onClick={() => setViewMode("calendar")}
+                className={`px-2 py-1.5 rounded-md transition-all ${
+                  viewMode === "calendar"
+                    ? "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                }`}
                 title="Calendar view"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -756,7 +869,7 @@ export default function PostsPage() {
             </div>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
               <button
-                onClick={() => setShowNewForm(!showNewForm)}
+                onClick={() => setShowCreateModal(true)}
                 className="text-black px-4 py-2 rounded-lg hover:opacity-90 transition-colors font-mono font-semibold whitespace-nowrap w-full sm:w-auto text-center"
                 style={{ backgroundColor: "rgb(255, 237, 160)" }}
               >
@@ -1006,7 +1119,10 @@ export default function PostsPage() {
           <div className="text-center py-8 text-gray-600 dark:text-gray-400">Carregando...</div>
         ) : !hasConnectedAccounts ? (
           /* Empty state when no accounts are connected */
-          <div id="connection-grid" className="empty-state-container bg-gray-50 dark:bg-gray-900 rounded-lg p-6 md:p-12 border border-gray-200 dark:border-gray-700 text-center transition-all duration-300">
+          <div
+            id="connection-grid"
+            className="empty-state-container bg-gray-50 dark:bg-gray-900 rounded-lg p-6 md:p-12 border border-gray-200 dark:border-gray-700 text-center transition-all duration-300"
+          >
             <div className="max-w-2xl mx-auto">
               <h3 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white mb-4 md:mb-8 font-mono md:hidden">
                 Select a platform to connect
@@ -1016,7 +1132,9 @@ export default function PostsPage() {
                   <button
                     key={platform.id}
                     onClick={() => handleOpenConnectModal(platform.id)}
-                    className={`platform-connect-btn bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 ${getPlatformHoverClass(platform.id)} p-2 md:p-4 rounded-lg flex items-center justify-center hover:scale-105 transition-all duration-300 cursor-pointer shadow-sm hover:shadow-md text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white group`}
+                    className={`platform-connect-btn bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 ${getPlatformHoverClass(
+                      platform.id
+                    )} p-2 md:p-4 rounded-lg flex items-center justify-center hover:scale-105 transition-all duration-300 cursor-pointer shadow-sm hover:shadow-md text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white group`}
                     data-platform={platform.id}
                     title={`Connect ${platform.name}`}
                   >
@@ -1026,12 +1144,188 @@ export default function PostsPage() {
               </div>
             </div>
           </div>
-        ) : filteredPosts.length === 0 ? (
-          <div className="bg-gray-50 dark:bg-gray-900 p-6 rounded-lg border border-gray-200 dark:border-gray-700 text-center text-gray-500 dark:text-gray-400">
-            {posts.length === 0
-              ? "Nenhum post criado ainda"
-              : "No posts match current filters"}
+        ) : viewMode === "calendar" ? (
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-4">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white font-mono">
+                  {calendarMonthLabel}
+                </h2>
+                <button
+                  onClick={() => {
+                    const now = new Date();
+                    setCalendarCurrentMonth(new Date(now.getFullYear(), now.getMonth(), 1));
+                  }}
+                  className="text-sm px-3 py-1 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white transition-all font-mono"
+                >
+                  Today
+                </button>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() =>
+                    setCalendarCurrentMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))
+                  }
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                >
+                  <svg className="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                <button
+                  onClick={() =>
+                    setCalendarCurrentMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))
+                  }
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                >
+                  <svg className="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center justify-end mb-2 gap-2">
+                <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">week starts on</span>
+                <div className="inline-flex rounded-md overflow-hidden border border-gray-300 dark:border-gray-700">
+                  <button
+                    type="button"
+                    onClick={() => setCalendarWeekStart("sun")}
+                    className={`px-2 py-1 text-xs font-mono transition-colors ${
+                      calendarWeekStart === "sun"
+                        ? "bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white"
+                        : "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                    }`}
+                    title="Start week on Sunday"
+                  >
+                    Sun
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCalendarWeekStart("mon")}
+                    className={`px-2 py-1 text-xs font-mono transition-colors border-l border-gray-300 dark:border-gray-700 ${
+                      calendarWeekStart === "mon"
+                        ? "bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white"
+                        : "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                    }`}
+                    title="Start week on Monday"
+                  >
+                    Mon
+                  </button>
+                </div>
+              </div>
+              <div className="grid grid-cols-7 gap-0 mb-2">
+                {(calendarWeekStart === "sun"
+                  ? ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+                  : ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+                ).map((label) => (
+                  <div key={label} className="text-center text-sm text-gray-500 dark:text-gray-400 font-mono">
+                    {label}
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-7 gap-0">
+                {calendarDays.map((day, index) => {
+                  const isOut = !day.isCurrentMonth;
+                  const hasPosts = day.posts.length > 0;
+
+                  return (
+                    <div
+                      key={day.date.toISOString() + index}
+                      className={[
+                        "min-h-[100px] border p-2 cursor-pointer transition-colors calendar-day border-gray-200 dark:border-gray-700",
+                        day.isToday ? "border-yellow-400/30 dark:border-yellow-300/10 ring-1 ring-yellow-400 dark:ring-yellow-300 ring-inset calendar-day--today" : "",
+                        isOut ? "bg-gray-100/50 dark:bg-gray-900/50 text-gray-400 dark:text-gray-600 calendar-day--out" : "bg-white dark:bg-gray-900",
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
+                    >
+                      <div className="flex justify-between items-start mb-1">
+                        <span
+                          className={[
+                            "text-sm font-mono",
+                            day.isToday ? "text-yellow-600 dark:text-yellow-300 font-bold" : "text-gray-900 dark:text-white",
+                          ]
+                            .filter(Boolean)
+                            .join(" ")}
+                        >
+                          {day.date.getDate()}
+                        </span>
+                        {hasPosts && (
+                          <span className="ml-2 inline-flex items-center justify-center rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200 text-[10px] px-1.5 py-0.5 font-mono">
+                            {day.posts.length}
+                          </span>
+                        )}
+                      </div>
+                      <div className="space-y-1">
+                        {day.posts.slice(0, 3).map((post) => (
+                          <button
+                            key={post._id}
+                            type="button"
+                            onClick={() => handleViewPost(post)}
+                            className="w-full text-left text-[11px] leading-tight px-1.5 py-0.5 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors truncate"
+                            title={post.content || undefined}
+                          >
+                            <span className="mr-1 text-[9px] uppercase tracking-wide">
+                              {post.socialAccount.platform}
+                            </span>
+                            <span className="opacity-80">
+                              {post.content ? post.content : `Post (${post.status})`}
+                            </span>
+                          </button>
+                        ))}
+                        {day.posts.length > 3 && (
+                          <div className="text-[10px] text-gray-500 dark:text-gray-400 font-mono">
+                            +{day.posts.length - 3} more
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
+        ) : filteredPosts.length === 0 ? (
+          posts.length === 0 ? (
+            <div
+              id="connection-grid"
+              className="empty-state-container bg-gray-50 dark:bg-gray-900 rounded-lg p-6 md:p-12 border border-gray-200 dark:border-gray-700 text-center transition-all duration-300"
+            >
+              <div className="max-w-2xl mx-auto">
+                <div className="mb-6">
+                  <div className="w-20 h-20 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-gray-200 dark:border-gray-700">
+                    <svg
+                      className="w-10 h-10 text-gray-600 dark:text-gray-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                      />
+                    </svg>
+                  </div>
+                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3 font-mono">No posts yet</h3>
+                  <p className="text-gray-600 dark:text-gray-400 font-mono">Create your first social media post</p>
+                </div>
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  className="w-full text-black px-6 py-3 rounded-lg hover:opacity-90 transition-colors font-mono font-semibold max-w-md mx-auto"
+                  style={{ backgroundColor: "rgb(255, 237, 160)" }}
+                >
+                  create post
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-gray-50 dark:bg-gray-900 p-6 rounded-lg border border-gray-200 dark:border-gray-700 text-center text-gray-500 dark:text-gray-400">
+              No posts match current filters
+            </div>
+          )
         ) : (
           <div className="space-y-4">
             {filteredPosts.map((post) => (
@@ -1046,11 +1340,17 @@ export default function PostsPage() {
                       <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded capitalize">
                         {post.contentType || "unknown"}
                       </span>
-                      <span className={`text-xs px-2 py-1 rounded ${post.status === "published" ? "bg-green-100 text-green-800" :
-                        post.status === "scheduled" ? "bg-yellow-100 text-yellow-800" :
-                          post.status === "failed" ? "bg-red-100 text-red-800" :
-                            "bg-gray-100 text-gray-800"
-                        }`}>
+                      <span
+                        className={`text-xs px-2 py-1 rounded ${
+                          post.status === "published"
+                            ? "bg-green-100 text-green-800"
+                            : post.status === "scheduled"
+                            ? "bg-yellow-100 text-yellow-800"
+                            : post.status === "failed"
+                            ? "bg-red-100 text-red-800"
+                            : "bg-gray-100 text-gray-800"
+                        }`}
+                      >
                         {post.status}
                       </span>
                     </div>
@@ -1058,7 +1358,8 @@ export default function PostsPage() {
                       <p className="text-gray-700 dark:text-gray-300 mb-2">{post.content}</p>
                     )}
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {post.socialAccount.platform} - @{post.socialAccount.username || "sem username"} ({post.socialAccount.profile.name})
+                      {post.socialAccount.platform} - @{post.socialAccount.username || "sem username"} (
+                      {post.socialAccount.profile.name})
                     </p>
                     {post.scheduledFor && (
                       <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
@@ -1254,6 +1555,298 @@ export default function PostsPage() {
           </div>
         )}
       </div>
+
+      {/* Create Post Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 p-2 md:p-4">
+          <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 md:border rounded-t-2xl md:rounded-lg w-full max-w-full md:max-w-3xl mx-2 md:mx-0 h-[95vh] max-h-[95vh] md:h-auto md:max-h-[90vh] overflow-hidden shadow-2xl transition-colors create-post-modal dashboard-panel flex flex-col">
+            <div className="flex justify-between items-center px-4 py-4 md:p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+              <div>
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white font-mono">Create Post</h2>
+                <p className="text-gray-600 dark:text-gray-400 text-sm font-mono">create &amp; publish content</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  className="px-3 h-8 text-sm rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white font-mono"
+                  title="Reuse a previous post"
+                >
+                  Reuse
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowCreateModal(false)}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div className="overflow-y-auto overflow-x-hidden flex-1">
+              <form
+                id="create-post-form"
+                className="px-4 py-4 md:p-6 space-y-6"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleCreate();
+                }}
+              >
+                <div className="space-y-3">
+                  <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 font-mono">
+                    content
+                  </label>
+                  <div className="relative">
+                    <textarea
+                      className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-3 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:border-gray-300 dark:border-gray-600 focus:outline-none transition-all resize-none overflow-hidden font-mono text-sm"
+                      rows={4}
+                      placeholder="what's on your mind..."
+                      required
+                      value={newPostContent}
+                      onChange={(e) => setNewPostContent(e.target.value)}
+                    />
+                    <div className="absolute bottom-3 right-3 text-xs font-mono text-gray-400">
+                      {newPostContent.length} chars
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 font-mono">
+                    media <span className="text-gray-500">(optional)</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="media-upload"
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      multiple
+                      accept="image/*,video/*,application/pdf"
+                      type="file"
+                      onChange={handleFileChange}
+                    />
+                    <div className="border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg p-6 text-center hover:border-gray-400 dark:hover:border-gray-600 transition-all">
+                      <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center mx-auto mb-3">
+                        <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                          ></path>
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-gray-900 dark:text-white font-medium font-mono text-sm">upload media</p>
+                        <p className="text-gray-600 dark:text-gray-400 text-xs mt-1 font-mono">
+                          images/videos/PDFs up to 5GB each (LinkedIn PDFs ≤ 100MB)
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4 transition-opacity">
+                  <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 font-mono">profiles</label>
+                  <div className="space-y-2">
+                    <p className="text-xs text-gray-500 font-mono">
+                      Select one or more profiles to post to their connected accounts
+                    </p>
+                    <div>
+                      <div className="relative">
+                        <button
+                          type="button"
+                          className="w-full flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-mono text-sm focus:border-gray-300 dark:focus:border-gray-600 focus:outline-none min-h-[48px]"
+                        >
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                              <div className="flex items-center gap-1 min-w-0">
+                                <div
+                                  className="w-3 h-3 rounded-full flex-shrink-0"
+                                  title="Default Profile"
+                                  style={{ backgroundColor: "rgb(255, 237, 160)" }}
+                                ></div>
+                              </div>
+                              <span className="text-left truncate">
+                                {defaultProfile?.name || "Default Profile"}
+                              </span>
+                            </div>
+                          </div>
+                          <svg
+                            className="w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 font-mono">
+                    platforms (from 1 profile)
+                  </label>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex flex-col md:flex-row md:items-center gap-2">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <label className="text-xs text-gray-500 font-mono">groups</label>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex flex-wrap gap-2">
+                            <span className="text-xs text-gray-500 font-mono">no groups yet</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Placeholder for platforms selection - to be wired with real accounts later */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      className="p-4 rounded-lg border transition-all duration-200 text-left relative border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-600 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="relative w-10 h-10">
+                          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-600 to-pink-500 flex items-center justify-center text-white border border-gray-200 dark:border-gray-700">
+                            <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"></path>
+                            </svg>
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium font-mono text-sm text-gray-900 dark:text-white">Instagram</div>
+                          <div className="text-xs truncate font-mono text-gray-400">@account</div>
+                        </div>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 font-mono">
+                    publishing
+                  </label>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 w-full">
+                    <button
+                      type="button"
+                      onClick={() => setNewPostPublishNow(false)}
+                      className={`w-full flex items-center gap-2 px-4 py-3 rounded-lg font-mono text-sm transition-all border ${
+                        !newPostPublishNow
+                          ? "bg-blue-100 dark:bg-blue-500/20 border-blue-500 text-blue-700 dark:text-blue-300"
+                          : "bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400"
+                      }`}
+                    >
+                      <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                      Schedule
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setNewPostPublishNow(true)}
+                      className={`w-full flex items-center gap-2 px-4 py-3 rounded-lg font-mono text-sm transition-all border ${
+                        newPostPublishNow
+                          ? "bg-blue-100 dark:bg-blue-500/20 border-blue-500 text-blue-700 dark:text-blue-300"
+                          : "bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                      }`}
+                    >
+                      <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                      Now
+                    </button>
+                    <button
+                      type="button"
+                      className="w-full flex items-center gap-2 px-4 py-3 rounded-lg font-mono text-sm transition-all bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                    >
+                      <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
+                      Queue
+                    </button>
+                    <button
+                      type="button"
+                      className="w-full flex items-center gap-2 px-4 py-3 rounded-lg font-mono text-sm transition-all bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                    >
+                      <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
+                      Draft
+                    </button>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="space-y-2 max-w-full overflow-hidden">
+                      <div className="flex items-center justify-between">
+                        <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 font-mono">
+                          schedule for
+                        </label>
+                      </div>
+                      <input
+                        className="w-full max-w-full box-border bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-3 md:px-4 py-2 md:py-3 text-gray-900 dark:text-white focus:border-gray-300 dark:focus:border-gray-600 focus:outline-none transition-all font-mono text-xs md:text-sm"
+                        min={new Date().toISOString().slice(0, 16)}
+                        required={!newPostPublishNow}
+                        type="datetime-local"
+                        value={newPostScheduledAt}
+                        onChange={(e) => setNewPostScheduledAt(e.target.value)}
+                        style={{ maxWidth: "100%" }}
+                        disabled={newPostPublishNow}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 font-mono">
+                        timezone
+                      </label>
+                      <div className="relative">
+                        <button
+                          type="button"
+                          className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-3 text-gray-900 dark:text-white font-mono text-sm flex items-center justify-between hover:border-gray-400 dark:hover:border-gray-600 transition-colors"
+                          aria-haspopup="listbox"
+                          aria-expanded="false"
+                        >
+                          <span className="truncate text-left pr-2">
+                            {newPostTimezone} (current)
+                          </span>
+                          <svg
+                            className="w-4 h-4 text-gray-400 transition-transform"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M5.23 7.21a.75.75 0 011.06.02L10 11.06l3.71-3.83a.75.75 0 111.08 1.04l-4.25 4.39a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z"
+                              clipRule="evenodd"
+                            ></path>
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </form>
+            </div>
+            <div className="flex justify-end gap-3 px-4 py-3 md:px-6 border-t border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 flex-shrink-0">
+              <button
+                type="button"
+                className="px-4 py-2 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-200 font-mono text-sm"
+                onClick={() => setShowCreateModal(false)}
+              >
+                cancel
+              </button>
+              <div className="relative group">
+                <button
+                  type="submit"
+                  form="create-post-form"
+                  disabled={creating}
+                  className="px-6 py-2 rounded-lg transition-all duration-200 font-mono text-sm text-black hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  style={{ backgroundColor: "rgb(255, 237, 160)" }}
+                >
+                  <span>{newPostPublishNow ? "publish now" : "schedule post"}</span>
+                  <span className="ml-1 px-1.5 py-0.5 bg-black/10 rounded text-xs font-mono whitespace-nowrap">
+                    Ctrl+↵
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Connect Account Modal */}
       {showConnectModal && (
