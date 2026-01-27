@@ -78,7 +78,17 @@ export default function WebhooksPage() {
     try {
       const res = await fetch("/api/webhooks");
       const data = await res.json();
-      setWebhooks(data.webhooks || []);
+      const webhooksData = (data.webhooks || []).map((w: any) => ({
+        id: w.id || w._id,
+        name: w.name,
+        url: w.url,
+        secretKey: w.secretKey,
+        customHeaders: (w.customHeaders || []) as CustomHeader[],
+        events: (w.events || []) as WebhookEvent[],
+        enabled: w.enabled,
+        createdAt: w.createdAt,
+      }));
+      setWebhooks(webhooksData);
     } catch (error) {
       console.error("Error loading webhooks:", error);
     }
@@ -143,17 +153,49 @@ export default function WebhooksPage() {
     setShowForm(true);
   }
 
-  function handleDelete(webhookId: string) {
+  async function handleDelete(webhookId: string) {
     if (!confirm("Are you sure you want to delete this webhook?")) return;
-    setWebhooks(webhooks.filter((w) => w.id !== webhookId));
+
+    try {
+      const res = await fetch(`/api/webhooks/${webhookId}`, {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        await loadWebhooks();
+      } else {
+        const error = await res.json();
+        alert(error.error || "Failed to delete webhook");
+      }
+    } catch (error) {
+      console.error("Error deleting webhook:", error);
+      alert("Error deleting webhook");
+    }
   }
 
-  function handleToggleEnabled(webhookId: string) {
-    setWebhooks(
-      webhooks.map((w) =>
-        w.id === webhookId ? { ...w, enabled: !w.enabled } : w
-      )
-    );
+  async function handleToggleEnabled(webhookId: string) {
+    const webhook = webhooks.find((w) => w.id === webhookId);
+    if (!webhook) return;
+
+    try {
+      const res = await fetch(`/api/webhooks/${webhookId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          enabled: !webhook.enabled,
+        }),
+      });
+
+      if (res.ok) {
+        await loadWebhooks();
+      } else {
+        const error = await res.json();
+        alert(error.error || "Failed to update webhook");
+      }
+    } catch (error) {
+      console.error("Error updating webhook:", error);
+      alert("Error updating webhook");
+    }
   }
 
   async function handleTest(webhookId: string) {
@@ -229,27 +271,59 @@ export default function WebhooksPage() {
     );
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    
-    const webhookData: Webhook = {
-      id: editingWebhook?.id || `webhook-${Date.now()}`,
-      name,
-      url,
-      secretKey: secretKey || undefined,
-      customHeaders,
-      events: selectedEvents,
-      enabled,
-      createdAt: editingWebhook?.createdAt || new Date().toISOString(),
-    };
 
-    if (editingWebhook) {
-      setWebhooks(webhooks.map((w) => (w.id === editingWebhook.id ? webhookData : w)));
-    } else {
-      setWebhooks([...webhooks, webhookData]);
+    try {
+      if (editingWebhook) {
+        // Update existing webhook
+        const res = await fetch(`/api/webhooks/${editingWebhook.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name,
+            url,
+            secretKey: secretKey || undefined,
+            customHeaders,
+            events: selectedEvents,
+            enabled,
+          }),
+        });
+
+        if (res.ok) {
+          await loadWebhooks();
+          handleCloseForm();
+        } else {
+          const error = await res.json();
+          alert(error.error || "Failed to update webhook");
+        }
+      } else {
+        // Create new webhook
+        const res = await fetch("/api/webhooks", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name,
+            url,
+            secretKey: secretKey || undefined,
+            customHeaders,
+            events: selectedEvents,
+            enabled,
+          }),
+        });
+
+        if (res.ok) {
+          await loadWebhooks();
+          handleCloseForm();
+        } else {
+          const error = await res.json();
+          alert(error.error || "Failed to create webhook");
+        }
+      }
+    } catch (error) {
+      console.error("Error saving webhook:", error);
+      alert("Error saving webhook");
     }
-
-    handleCloseForm();
   }
 
   function formatEventLabel(event: WebhookEvent): string {

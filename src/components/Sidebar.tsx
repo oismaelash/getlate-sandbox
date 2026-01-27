@@ -25,6 +25,7 @@ const mainNavItems: NavItem[] = [
   { href: "/dashboard/posts", label: "Posts", icon: FileText },
   { href: "/dashboard/connections", label: "Connections", icon: LinkIcon },
   { href: "/dashboard/api-keys", label: "API Keys", icon: Key },
+  { href: "/dashboard/webhooks", label: "Webhooks", icon: Zap },
 ];
 
 export default function Sidebar() {
@@ -92,14 +93,6 @@ export default function Sidebar() {
                 Users
               </button>
             </li> */}
-            <li>
-              <button
-                className="w-full text-left text-sm font-mono transition-colors flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
-              >
-                <Zap className="w-4 h-4" />
-                Webhooks
-              </button>
-            </li>
             {/* <li>
               <button
                 className="w-full text-left text-sm font-mono transition-colors flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
