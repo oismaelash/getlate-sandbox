@@ -15,6 +15,8 @@ interface Account {
   _id: string;
   platform: string;
   username: string | null;
+  displayName?: string | null;
+  profilePicture?: string | null;
   profile: {
     _id?: string;
     name: string;
@@ -244,6 +246,9 @@ export default function PostsPage() {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [loadingPostDetails, setLoadingPostDetails] = useState(false);
+  const [showProfilesDropdown, setShowProfilesDropdown] = useState(false);
+  const [modalProfileSearch, setModalProfileSearch] = useState("");
+  const [selectedProfileIdForPost, setSelectedProfileIdForPost] = useState<string | null>(null);
   const [showConnectModal, setShowConnectModal] = useState(false);
   const [selectedPlatform, setSelectedPlatform] = useState("");
   const [newAccountUsername, setNewAccountUsername] = useState("");
@@ -869,7 +874,22 @@ export default function PostsPage() {
             </div>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
               <button
-                onClick={() => setShowCreateModal(true)}
+                onClick={() => {
+                  // Pré-selecionar o profile padrão e primeira conta dele, se existir
+                  const initialProfileId = defaultProfile?._id ?? null;
+                  setSelectedProfileIdForPost(initialProfileId);
+                  if (initialProfileId) {
+                    const profileAccounts = accounts.filter(
+                      (a) => a.profile._id === initialProfileId
+                    );
+                    setNewPostAccountId(profileAccounts[0]?._id || "");
+                  } else {
+                    setNewPostAccountId("");
+                  }
+                  setShowProfilesDropdown(false);
+                  setModalProfileSearch("");
+                  setShowCreateModal(true);
+                }}
                 className="text-black px-4 py-2 rounded-lg hover:opacity-90 transition-colors font-mono font-semibold whitespace-nowrap w-full sm:w-auto text-center"
                 style={{ backgroundColor: "rgb(255, 237, 160)" }}
               >
@@ -1313,7 +1333,21 @@ export default function PostsPage() {
                   <p className="text-gray-600 dark:text-gray-400 font-mono">Create your first social media post</p>
                 </div>
                 <button
-                  onClick={() => setShowCreateModal(true)}
+                  onClick={() => {
+                    const initialProfileId = defaultProfile?._id ?? null;
+                    setSelectedProfileIdForPost(initialProfileId);
+                    if (initialProfileId) {
+                      const profileAccounts = accounts.filter(
+                        (a) => a.profile._id === initialProfileId
+                      );
+                      setNewPostAccountId(profileAccounts[0]?._id || "");
+                    } else {
+                      setNewPostAccountId("");
+                    }
+                    setShowProfilesDropdown(false);
+                    setModalProfileSearch("");
+                    setShowCreateModal(true);
+                  }}
                   className="w-full text-black px-6 py-3 rounded-lg hover:opacity-90 transition-colors font-mono font-semibold max-w-md mx-auto"
                   style={{ backgroundColor: "rgb(255, 237, 160)" }}
                 >
@@ -1647,48 +1681,160 @@ export default function PostsPage() {
                 </div>
 
                 <div className="space-y-4 transition-opacity">
-                  <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 font-mono">profiles</label>
+                  <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 font-mono">
+                    profiles
+                  </label>
                   <div className="space-y-2">
                     <p className="text-xs text-gray-500 font-mono">
                       Select one or more profiles to post to their connected accounts
                     </p>
-                    <div>
-                      <div className="relative">
-                        <button
-                          type="button"
-                          className="w-full flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-mono text-sm focus:border-gray-300 dark:focus:border-gray-600 focus:outline-none min-h-[48px]"
-                        >
-                          <div className="flex items-center gap-3 min-w-0 flex-1">
-                            <div className="flex items-center gap-2 min-w-0 flex-1">
-                              <div className="flex items-center gap-1 min-w-0">
-                                <div
-                                  className="w-3 h-3 rounded-full flex-shrink-0"
-                                  title="Default Profile"
-                                  style={{ backgroundColor: "rgb(255, 237, 160)" }}
-                                ></div>
-                              </div>
-                              <span className="text-left truncate">
-                                {defaultProfile?.name || "Default Profile"}
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setShowProfilesDropdown((open) => !open)}
+                        className="w-full flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-mono text-sm focus:border-gray-300 dark:focus:border-gray-600 focus:outline-none min-h-[48px]"
+                      >
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            {selectedProfileIdForPost ? (
+                              <>
+                                <div className="flex items-center gap-1 min-w-0">
+                                  <div
+                                    className="w-3 h-3 rounded-full flex-shrink-0"
+                                    style={{ backgroundColor: "rgb(255, 237, 160)" }}
+                                  />
+                                </div>
+                                <span className="text-left truncate">
+                                  {profiles.find((p) => p._id === selectedProfileIdForPost)?.name || "Selected profile"}
+                                </span>
+                              </>
+                            ) : (
+                              <span className="text-left truncate text-gray-500 dark:text-gray-400">
+                                Choose profiles for this post
                               </span>
-                            </div>
+                            )}
                           </div>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 font-mono">
+                          <span>
+                            {selectedProfileIdForPost ? "1" : "0"}/{profiles.length || 1}
+                          </span>
                           <svg
                             className="w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
                           >
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                           </svg>
-                        </button>
-                      </div>
+                        </div>
+                      </button>
+
+                      {showProfilesDropdown && (
+                        <div className="absolute z-50 mt-1 w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-lg">
+                          <div className="p-3 border-b border-gray-100 dark:border-gray-800">
+                            <div className="relative">
+                              <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                              <input
+                                type="text"
+                                placeholder="Search profiles..."
+                                value={modalProfileSearch}
+                                onChange={(e) => setModalProfileSearch(e.target.value)}
+                                className="w-full pl-8 pr-3 py-1.5 text-xs rounded bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500 dark:focus:border-blue-400"
+                              />
+                            </div>
+                            <div className="mt-2 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 font-mono">
+                              <button
+                                type="button"
+                                className="hover:text-gray-900 dark:hover:text-white"
+                                onClick={() => {
+                                  const first = profiles[0];
+                                  setSelectedProfileIdForPost(first?._id ?? null);
+                                }}
+                              >
+                                Select All ({profiles.length || 0})
+                              </button>
+                              <button
+                                type="button"
+                                className="hover:text-gray-900 dark:hover:text-white"
+                                onClick={() => setSelectedProfileIdForPost(null)}
+                              >
+                                Clear
+                              </button>
+                              <span>
+                                {selectedProfileIdForPost ? "1" : "0"}/1
+                              </span>
+                            </div>
+                          </div>
+                          <div className="max-h-64 overflow-y-auto">
+                            {profiles
+                              .filter((p) =>
+                                modalProfileSearch
+                                  ? p.name.toLowerCase().includes(modalProfileSearch.toLowerCase())
+                                  : true
+                              )
+                              .map((profile) => {
+                                const checked = selectedProfileIdForPost === profile._id;
+                                return (
+                                  <button
+                                    key={profile._id}
+                                    type="button"
+                                    onClick={() =>
+                                      setSelectedProfileIdForPost(checked ? null : profile._id)
+                                    }
+                                    className={`w-full flex items-start gap-3 px-3 py-2 text-left text-sm transition-colors ${
+                                      checked
+                                        ? "bg-blue-500/10 text-gray-100"
+                                        : "text-gray-200 hover:bg-gray-800"
+                                    }`}
+                                  >
+                                    <div className="mt-0.5">
+                                      <input
+                                        type="checkbox"
+                                        readOnly
+                                        checked={checked}
+                                        className="w-3.5 h-3.5 rounded border-gray-400 text-blue-500 focus:ring-0 bg-transparent"
+                                      />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-2">
+                                        <span className="w-2 h-2 rounded-full bg-yellow-300" />
+                                        <span className="font-mono text-sm truncate">
+                                          {profile.name}
+                                        </span>
+                                        {defaultProfile?._id === profile._id && (
+                                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-700 text-gray-100 font-mono">
+                                            default
+                                          </span>
+                                        )}
+                                      </div>
+                                      <p className="text-xs text-gray-400 font-mono truncate">
+                                        {profile.description || "Your default profile"}
+                                      </p>
+                                    </div>
+                                  </button>
+                                );
+                              })}
+                          </div>
+                          {selectedProfileIdForPost && (
+                            <div className="px-3 py-2 border-t border-gray-100 dark:border-gray-800 text-xs text-gray-400 font-mono">
+                              Selected:{" "}
+                              {
+                                profiles.find((p) => p._id === selectedProfileIdForPost)
+                                  ?.name
+                              }
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
 
                 <div className="space-y-4">
                   <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 font-mono">
-                    platforms (from 1 profile)
+                    platforms (from {selectedProfileIdForPost ? "1" : "0"} profile
+                    {selectedProfileIdForPost ? "" : "s"})
                   </label>
                   <div className="flex flex-col gap-2">
                     <div className="flex flex-col md:flex-row md:items-center gap-2">
@@ -1704,26 +1850,92 @@ export default function PostsPage() {
                       </div>
                     </div>
                   </div>
-                  {/* Placeholder for platforms selection - to be wired with real accounts later */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      className="p-4 rounded-lg border transition-all duration-200 text-left relative border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-600 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="relative w-10 h-10">
-                          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-600 to-pink-500 flex items-center justify-center text-white border border-gray-200 dark:border-gray-700">
-                            <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
-                              <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"></path>
-                            </svg>
+                  <div className="mt-2">
+                    {selectedProfileIdForPost
+                      ? (() => {
+                          const profileAccounts = accounts.filter(
+                            (a) => a.profile._id === selectedProfileIdForPost
+                          );
+
+                          if (profileAccounts.length === 0) {
+                            return (
+                              <div className="mt-3 rounded-lg border border-dashed border-gray-600 bg-gray-900 px-6 py-8 text-center text-gray-400">
+                                <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-gray-800">
+                                  <span className="text-lg">+</span>
+                                </div>
+                                <div className="font-mono text-sm">no connected accounts</div>
+                                <div className="mt-1 text-xs font-mono text-gray-500">
+                                  select a profile and connect accounts first
+                                </div>
+                              </div>
+                            );
+                          }
+
+                          return (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              {profileAccounts.map((account) => {
+                                const platformMeta = PLATFORMS.find(
+                                  (p) => p.id === account.platform
+                                );
+                                const isSelected = newPostAccountId === account._id;
+                                return (
+                                  <button
+                                    key={account._id}
+                                    type="button"
+                                    onClick={() => setNewPostAccountId(account._id)}
+                                    className={`p-4 rounded-lg border transition-all duration-200 text-left relative bg-gray-900 ${
+                                      isSelected
+                                        ? "border-yellow-300 ring-1 ring-yellow-300/70"
+                                        : "border-gray-700 hover:border-gray-500 hover:bg-gray-800"
+                                    }`}
+                                  >
+                                    <div className="flex items-center gap-3">
+                                      <div className="relative w-10 h-10">
+                                        {account.profilePicture ? (
+                                          <img
+                                            src={account.profilePicture}
+                                            alt={account.username || ""}
+                                            className="w-10 h-10 rounded-lg object-cover border border-gray-700"
+                                          />
+                                        ) : (
+                                          <div className="w-10 h-10 rounded-lg bg-gray-800 flex items-center justify-center text-white border border-gray-700">
+                                            <span className="text-sm font-mono">
+                                              {(platformMeta?.name || "?")[0]}
+                                            </span>
+                                          </div>
+                                        )}
+                                        {platformMeta && (
+                                          <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-md flex items-center justify-center text-white shadow-lg bg-gray-900">
+                                            <PlatformIcon platform={platformMeta.id} />
+                                          </div>
+                                        )}
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <div className="font-medium font-mono text-sm text-white">
+                                          {platformMeta?.name || account.platform}
+                                        </div>
+                                        <div className="text-xs truncate font-mono text-gray-400">
+                                          @{account.username || "account"}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          );
+                        })()
+                      : (
+                        <div className="mt-3 rounded-lg border border-dashed border-gray-600 bg-gray-900 px-6 py-8 text-center text-gray-400">
+                          <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-gray-800">
+                            <span className="text-lg">+</span>
+                          </div>
+                          <div className="font-mono text-sm">no connected accounts</div>
+                          <div className="mt-1 text-xs font-mono text-gray-500">
+                            select a profile and connect accounts first
                           </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium font-mono text-sm text-gray-900 dark:text-white">Instagram</div>
-                          <div className="text-xs truncate font-mono text-gray-400">@account</div>
-                        </div>
-                      </div>
-                    </button>
+                      )}
                   </div>
                 </div>
 
@@ -1756,9 +1968,11 @@ export default function PostsPage() {
                       <div className="w-2 h-2 bg-green-400 rounded-full"></div>
                       Now
                     </button>
-                    <button
+                    {/* <button
                       type="button"
                       className="w-full flex items-center gap-2 px-4 py-3 rounded-lg font-mono text-sm transition-all bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                      disabled
+                      title="Queue is not available yet"
                     >
                       <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
                       Queue
@@ -1766,57 +1980,82 @@ export default function PostsPage() {
                     <button
                       type="button"
                       className="w-full flex items-center gap-2 px-4 py-3 rounded-lg font-mono text-sm transition-all bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                      disabled
+                      title="Draft is not available yet"
                     >
                       <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
                       Draft
-                    </button>
+                    </button> */}
                   </div>
+                  {/* <p className="text-[11px] text-gray-500 dark:text-gray-400 font-mono">
+                    Queue and Draft are planned options and are not active yet.
+                  </p> */}
                   <div className="space-y-4">
-                    <div className="space-y-2 max-w-full overflow-hidden">
-                      <div className="flex items-center justify-between">
-                        <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 font-mono">
-                          schedule for
-                        </label>
+                    {newPostPublishNow ? (
+                      <div className="bg-green-900/20 border border-green-700 rounded-lg p-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 bg-green-400 rounded-full flex items-center justify-center">
+                            <svg className="w-2 h-2 text-black" fill="currentColor" viewBox="0 0 20 20">
+                              <path
+                                fillRule="evenodd"
+                                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                clipRule="evenodd"
+                              ></path>
+                            </svg>
+                          </div>
+                          <p className="text-green-300 font-mono text-sm">
+                            Post will be published immediately to all selected platforms
+                          </p>
+                        </div>
                       </div>
-                      <input
-                        className="w-full max-w-full box-border bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-3 md:px-4 py-2 md:py-3 text-gray-900 dark:text-white focus:border-gray-300 dark:focus:border-gray-600 focus:outline-none transition-all font-mono text-xs md:text-sm"
-                        min={new Date().toISOString().slice(0, 16)}
-                        required={!newPostPublishNow}
-                        type="datetime-local"
-                        value={newPostScheduledAt}
-                        onChange={(e) => setNewPostScheduledAt(e.target.value)}
-                        style={{ maxWidth: "100%" }}
-                        disabled={newPostPublishNow}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 font-mono">
-                        timezone
-                      </label>
-                      <div className="relative">
-                        <button
-                          type="button"
-                          className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-3 text-gray-900 dark:text-white font-mono text-sm flex items-center justify-between hover:border-gray-400 dark:hover:border-gray-600 transition-colors"
-                          aria-haspopup="listbox"
-                          aria-expanded="false"
-                        >
-                          <span className="truncate text-left pr-2">
-                            {newPostTimezone} (current)
-                          </span>
-                          <svg
-                            className="w-4 h-4 text-gray-400 transition-transform"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M5.23 7.21a.75.75 0 011.06.02L10 11.06l3.71-3.83a.75.75 0 111.08 1.04l-4.25 4.39a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z"
-                              clipRule="evenodd"
-                            ></path>
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
+                    ) : (
+                      <>
+                        <div className="space-y-2 max-w-full overflow-hidden">
+                          <div className="flex items-center justify-between">
+                            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 font-mono">
+                              schedule for
+                            </label>
+                          </div>
+                          <input
+                            className="w-full max-w-full box-border bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-3 md:px-4 py-2 md:py-3 text-gray-900 dark:text-white focus:border-gray-300 dark:focus:border-gray-600 focus:outline-none transition-all font-mono text-xs md:text-sm"
+                            min={new Date().toISOString().slice(0, 16)}
+                            required
+                            type="datetime-local"
+                            value={newPostScheduledAt}
+                            onChange={(e) => setNewPostScheduledAt(e.target.value)}
+                            style={{ maxWidth: "100%" }}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 font-mono">
+                            timezone
+                          </label>
+                          <div className="relative">
+                            <button
+                              type="button"
+                              className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-3 text-gray-900 dark:text-white font-mono text-sm flex items-center justify-between hover:border-gray-400 dark:hover:border-gray-600 transition-colors"
+                              aria-haspopup="listbox"
+                              aria-expanded="false"
+                            >
+                              <span className="truncate text-left pr-2">
+                                {newPostTimezone} (current)
+                              </span>
+                              <svg
+                                className="w-4 h-4 text-gray-400 transition-transform"
+                                viewBox="0 0 20 20"
+                                fill="currentColor"
+                              >
+                                <path
+                                  fillRule="evenodd"
+                                  d="M5.23 7.21a.75.75 0 011.06.02L10 11.06l3.71-3.83a.75.75 0 111.08 1.04l-4.25 4.39a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z"
+                                  clipRule="evenodd"
+                                ></path>
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               </form>
