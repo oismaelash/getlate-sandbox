@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { RefreshCw, X, Check, Zap, Edit, Trash2, ChevronDown } from "lucide-react";
 
 type Tab = "webhooks" | "logs";
@@ -69,6 +69,53 @@ export default function WebhooksPage() {
     { value: "message.received", label: "Message Received" },
   ];
 
+  useEffect(() => {
+    loadWebhooks();
+    loadDeliveryLogs();
+  }, []);
+
+  async function loadWebhooks() {
+    try {
+      const res = await fetch("/api/webhooks");
+      const data = await res.json();
+      setWebhooks(data.webhooks || []);
+    } catch (error) {
+      console.error("Error loading webhooks:", error);
+    }
+  }
+
+  async function loadDeliveryLogs() {
+    try {
+      const params = new URLSearchParams();
+      if (filterStatus !== "all") {
+        params.append("status", filterStatus);
+      }
+      const res = await fetch(`/api/webhooks/delivery-logs?${params.toString()}`);
+      const data = await res.json();
+      const logs = (data.logs || []).map((log: any) => ({
+        id: log.id,
+        status: log.status as "success" | "failed",
+        statusCode: log.statusCode || 0,
+        event: log.event,
+        timestamp: log.timestamp,
+        responseTime: log.responseTime || 0,
+        attempts: log.attempts || 1,
+        url: log.webhook?.url || "",
+        requestPayload: log.requestPayload,
+        response: log.response || "",
+      }));
+      setDeliveryLogs(logs);
+    } catch (error) {
+      console.error("Error loading delivery logs:", error);
+    }
+  }
+
+  useEffect(() => {
+    if (activeTab === "logs") {
+      loadDeliveryLogs();
+    }
+  }, [filterStatus, activeTab]);
+
   function handleOpenForm() {
     setShowForm(true);
   }
@@ -109,30 +156,23 @@ export default function WebhooksPage() {
     );
   }
 
-  function handleTest(webhookId: string) {
-    // TODO: Implement test webhook functionality
-    const webhook = webhooks.find((w) => w.id === webhookId);
-    if (!webhook) return;
+  async function handleTest(webhookId: string) {
+    try {
+      const res = await fetch(`/api/webhooks/${webhookId}/test`, {
+        method: "POST",
+      });
 
-    // Create a test delivery log
-    const testLog: DeliveryLog = {
-      id: `log-${Date.now()}`,
-      status: "success",
-      statusCode: 200,
-      event: "webhook.test",
-      timestamp: new Date().toISOString(),
-      responseTime: Math.floor(Math.random() * 500) + 100,
-      attempts: 1,
-      url: webhook.url,
-      requestPayload: {
-        event: "webhook.test",
-        message: "This is a test webhook from Late",
-        timestamp: new Date().toISOString(),
-      },
-      response: '"This URL has no default content configured. <a href=\\"https://webhook.site/#!/edit/2b99cb68-b802-4054-8338-809b8e6a277d\\">Change response in Webhook.site</a>."',
-    };
-
-    setDeliveryLogs([testLog, ...deliveryLogs]);
+      if (res.ok) {
+        // Reload delivery logs to show the new test delivery
+        await loadDeliveryLogs();
+      } else {
+        const error = await res.json();
+        alert(error.error || "Failed to test webhook");
+      }
+    } catch (error) {
+      console.error("Error testing webhook:", error);
+      alert("Error testing webhook");
+    }
   }
 
   function toggleLogExpanded(logId: string) {
@@ -256,15 +296,22 @@ export default function WebhooksPage() {
         {activeTab === "webhooks" && (
           <div>
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-6 md:mb-8">
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-1 sm:mb-2 font-mono">
-                  Webhooks
-                </h1>
-                <p className="text-gray-500 dark:text-gray-400 font-mono text-sm sm:text-base">
-                  Get notified when events happen
-                </p>
-              </div>
-            </div>
+                  <div>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-1 sm:mb-2 font-mono">
+                      Webhooks
+                    </h1>
+                    <p className="text-gray-500 dark:text-gray-400 font-mono text-sm sm:text-base">
+                      Get notified when events happen
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleOpenForm}
+                    className="text-sm px-4 py-2 rounded-lg transition-colors font-mono text-black hover:opacity-90"
+                    style={{ backgroundColor: "rgb(255, 237, 160)" }}
+                  >
+                    + Add Webhook
+                  </button>
+                </div>
 
             {/* Create Webhook Form */}
             {showForm ? (
@@ -419,23 +466,6 @@ export default function WebhooksPage() {
               </div>
             ) : (
               <>
-                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-6 md:mb-8">
-                  <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-1 sm:mb-2 font-mono">
-                      Webhooks
-                    </h1>
-                    <p className="text-gray-500 dark:text-gray-400 font-mono text-sm sm:text-base">
-                      Get notified when events happen
-                    </p>
-                  </div>
-                  <button
-                    onClick={handleOpenForm}
-                    className="text-sm px-4 py-2 rounded-lg transition-colors font-mono text-black hover:opacity-90"
-                    style={{ backgroundColor: "rgb(255, 237, 160)" }}
-                  >
-                    + Add Webhook
-                  </button>
-                </div>
                 <div className="space-y-4">
                   {webhooks.length === 0 ? (
                     <div className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-8 text-center">

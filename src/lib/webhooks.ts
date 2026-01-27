@@ -42,7 +42,7 @@ export function calculateHMACSignature(
 /**
  * Deliver webhook to URL with retry logic
  */
-async function deliverWebhook(
+export async function deliverWebhook(
   webhook: {
     getlateId: string;
     url: string;
