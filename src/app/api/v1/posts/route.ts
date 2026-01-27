@@ -12,6 +12,7 @@ import {
   hasPdf,
   supportsPdf,
 } from "@/lib/post-validation";
+import { triggerWebhook } from "@/lib/webhooks";
 
 export async function POST(request: NextRequest) {
   try {
@@ -124,6 +125,9 @@ export async function POST(request: NextRequest) {
     // Verificar se account existe (já validado acima, mas mantido para compatibilidade)
     const account = await db.socialAccount.findUnique({
       where: { getlateId: instagramAccountId },
+      include: {
+        profile: true,
+      },
     });
 
     if (!account) {
@@ -277,6 +281,21 @@ export async function POST(request: NextRequest) {
         publishNow: shouldPublishNow,
       },
     });
+
+    // Trigger webhook for post.scheduled
+    if (postStatus === "scheduled" && scheduledDate) {
+      const platformsArray = (platforms as Array<{ platform: string }>) || [];
+      triggerWebhook("post.scheduled", {
+        post_id: post.getlateId,
+        profile_id: account.profile.getlateId,
+        scheduled_at: scheduledDate.toISOString(),
+        platforms: platformsArray.map((p) => p.platform),
+        content: {
+          text: content || null,
+        },
+        status: "scheduled",
+      });
+    }
 
     // Criar job no BullMQ para processar publicação
     if (postStatus === "scheduled" && scheduledDate) {

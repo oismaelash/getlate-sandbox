@@ -73,3 +73,44 @@ model Post {
   @@map("Post")
 }
 
+model Webhook {
+  id            String   @id @default(cuid())
+  getlateId     String   @unique @map("_id")
+  name          String
+  url           String
+  secretKey     String?
+  customHeaders Json?    @default("[]")
+  events        Json     // Array of event strings
+  enabled       Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  deliveryLogs WebhookDeliveryLog[]
+
+  @@index([getlateId])
+  @@index([enabled])
+  @@map("Webhook")
+}
+
+model WebhookDeliveryLog {
+  id            String   @id @default(cuid())
+  webhookId     String
+  event         String
+  status        String   // "success" | "failed"
+  statusCode    Int?
+  responseTime  Int?     // milliseconds
+  attempts      Int      @default(1)
+  requestPayload Json
+  response      String?  @db.Text
+  timestamp     DateTime @default(now())
+  createdAt     DateTime @default(now())
+
+  webhook Webhook @relation(fields: [webhookId], references: [getlateId], onDelete: Cascade)
+
+  @@index([webhookId])
+  @@index([status])
+  @@index([timestamp])
+  @@index([event])
+  @@map("WebhookDeliveryLog")
+}
+

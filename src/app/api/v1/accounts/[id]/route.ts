@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateApiKey } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { triggerWebhook } from "@/lib/webhooks";
 
 export async function DELETE(
   request: NextRequest,
@@ -17,11 +18,25 @@ export async function DELETE(
 
     const account = await db.socialAccount.findUnique({
       where: { getlateId: accountId },
+      include: {
+        profile: true,
+      },
     });
 
     if (!account) {
       return NextResponse.json({ error: "Account not found" }, { status: 404 });
     }
+
+    // Trigger account.disconnected webhook before deleting
+    triggerWebhook("account.disconnected", {
+      account_id: account.getlateId,
+      profile_id: account.profileId,
+      platform: account.platform,
+      username: account.username || null,
+      reason: "manual_disconnect", // Could be "token_expired" in production
+      disconnected_at: new Date().toISOString(),
+      message: "Account disconnected manually",
+    });
 
     await db.socialAccount.delete({
       where: { getlateId: accountId },

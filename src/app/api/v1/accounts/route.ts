@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { validateApiKey } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { randomBytes } from "crypto";
+import { triggerWebhook } from "@/lib/webhooks";
 
 export async function GET(request: NextRequest) {
   try {
@@ -92,6 +93,25 @@ export async function POST(request: NextRequest) {
           profileUrl: profileUrl || null,
         },
       },
+    });
+
+    // Trigger account.connected webhook
+    const metadata = account.metadata as {
+      displayName?: string | null;
+      profilePicture?: string | null;
+      profileUrl?: string | null;
+    } | null;
+
+    triggerWebhook("account.connected", {
+      account_id: account.getlateId,
+      profile_id: account.profileId,
+      platform: account.platform,
+      platform_user_id: account.getlateId, // Mock - em produção seria o ID real da plataforma
+      username: account.username || null,
+      display_name: metadata?.displayName || null,
+      profile_image_url: metadata?.profilePicture || null,
+      account_type: "business", // Mock - em produção seria determinado pela plataforma
+      connected_at: account.createdAt.toISOString(),
     });
 
     // Retornar no formato GetLate
