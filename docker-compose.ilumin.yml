@@ -1,0 +1,65 @@
+services:
+  app:
+    image: ghcr.io/iluminapp/u37-getlate-sandbox:${APP_VERSION}
+    restart: unless-stopped
+    depends_on:
+      - db
+      - redis
+    environment:
+      - DATABASE_URL=postgresql://getlate:${DB_PASSWORD}@db:5432/getlate_sandbox
+      - REDIS_URL=redis://redis:6379
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=https://${BASE_DOMAIN}
+    volumes:
+      - uploads_data:/app/uploads
+    networks:
+      - traefik
+      - internal
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik
+      - traefik.http.routers.getlatesandbox.rule=Host(`${BASE_DOMAIN}`)${CUSTOM_DOMAIN:+ || Host(`${CUSTOM_DOMAIN}`)}
+      - traefik.http.routers.getlatesandbox.entrypoints=websecure
+      - traefik.http.routers.getlatesandbox.tls=true
+      - traefik.http.routers.getlatesandbox.tls.certresolver=letsencrypt
+      - traefik.http.services.getlatesandbox.loadbalancer.server.port=4000
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=getlate
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=getlate_sandbox
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U getlate -d getlate_sandbox"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  redis_data:
+  uploads_data:
+
+networks:
+  traefik:
+    external: true
+  internal:

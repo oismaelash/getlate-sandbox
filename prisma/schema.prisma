@@ -1,0 +1,75 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model ApiKey {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  name      String
+  createdAt DateTime @default(now())
+
+  @@index([key])
+}
+
+model Profile {
+  id          Int      @id @default(autoincrement())
+  getlateId   String   @unique @map("_id")
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+
+  socialAccounts SocialAccount[]
+
+  @@index([getlateId])
+  @@map("Profile")
+}
+
+model SocialAccount {
+  id        String   @id @default(cuid())
+  getlateId String   @unique @map("_id")
+  profileId String
+  platform  String
+  username  String?
+  status    String?  @default("active")
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  profile Profile @relation(fields: [profileId], references: [getlateId], onDelete: Cascade)
+  posts   Post[]
+
+  @@index([profileId])
+  @@index([getlateId])
+  @@map("SocialAccount")
+}
+
+model Post {
+  id              String   @id @default(cuid())
+  getlateId       String   @unique @map("_id")
+  socialAccountId String
+  content         String?
+  scheduledFor    DateTime?
+  timezone        String?
+  status          String   @default("scheduled")
+  contentType     String?
+  mediaItems      Json?
+  platforms       Json?
+  publishNow      Boolean  @default(false)
+  createdAt       DateTime @default(now())
+
+  socialAccount SocialAccount @relation(fields: [socialAccountId], references: [getlateId], onDelete: Cascade)
+
+  @@index([getlateId])
+  @@index([socialAccountId])
+  @@index([status])
+  @@index([scheduledFor])
+  @@map("Post")
+}
+

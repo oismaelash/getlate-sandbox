@@ -1,0 +1,156 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: getlate-sandbox-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: getlate
+      POSTGRES_PASSWORD: getlate
+      POSTGRES_DB: getlate_sandbox
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U getlate -d getlate_sandbox"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: getlate-sandbox-redis
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev
+    container_name: getlate-sandbox-app
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    env_file:
+      - .env
+    volumes:
+      # Bind mount for hot reload in dev mode
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+      # Volume para armazenar uploads
+      - uploads_data:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://127.0.0.1:4000', (res) => process.exit(res.statusCode < 500 ? 0 : 1)).on('error', () => process.exit(1));",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 90s
+    command: >
+      sh -c "
+      if [ -z \"$${DATABASE_URL:-}\" ]; then
+        export DATABASE_URL=\"postgresql://getlate:getlate@db:5432/getlate_sandbox\"
+        echo \"DATABASE_URL set to default.\"
+      fi &&
+      if [ -z \"$${REDIS_URL:-}\" ]; then
+        export REDIS_URL=\"redis://redis:6379\"
+        echo \"REDIS_URL set to default.\"
+      fi &&
+      echo \"Waiting for PostgreSQL and Redis to be ready...\" &&
+      until nc -z db 5432; do
+        echo \"PostgreSQL is unavailable - sleeping\"
+        sleep 2
+      done &&
+      until nc -z redis 6379; do
+        echo \"Redis is unavailable - sleeping\"
+        sleep 2
+      done &&
+      echo \"PostgreSQL and Redis are up - generating Prisma Client...\" &&
+      npx prisma generate &&
+      if [ -d \"prisma/migrations\" ] && [ \"$$(ls -A prisma/migrations 2>/dev/null)\" ]; then
+        echo \"Applying Prisma migrations...\" &&
+        npx prisma migrate deploy &&
+        echo \"Migrations applied successfully\"
+      else
+        echo \"No migrations found, using db push (dev mode)...\" &&
+        npx prisma db push --accept-data-loss &&
+        echo \"Database schema pushed successfully\"
+      fi &&
+      echo \"Starting Next.js dev server...\" &&
+      npm run dev -- -H 0.0.0.0 -p 4000
+      "
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://getlate:getlate@db:5432/getlate_sandbox
+      - REDIS_URL=redis://redis:6379
+      # Enable polling for file watching in Docker/WSL2
+      - WATCHPACK_POLLING=true
+      - WATCHPACK_POLLING_INTERVAL=1000
+      - CHOKIDAR_USEPOLLING=true
+      - CHOKIDAR_INTERVAL=1000
+      # Disable Turbopack for better file watching compatibility
+      - NEXT_PRIVATE_SKIP_TURBO=1
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev
+    container_name: getlate-sandbox-worker
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: >
+      sh -c "
+      if [ -z \"$${DATABASE_URL:-}\" ]; then
+        export DATABASE_URL=\"postgresql://getlate:getlate@db:5432/getlate_sandbox\"
+      fi &&
+      if [ -z \"$${REDIS_URL:-}\" ]; then
+        export REDIS_URL=\"redis://redis:6379\"
+      fi &&
+      echo \"Waiting for PostgreSQL and Redis to be ready...\" &&
+      until nc -z db 5432; do sleep 2; done &&
+      until nc -z redis 6379; do sleep 2; done &&
+      echo \"Generating Prisma Client...\" &&
+      npx prisma generate &&
+      echo \"Starting post scheduler worker...\" &&
+      npm run worker
+      "
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://getlate:getlate@db:5432/getlate_sandbox
+      - REDIS_URL=redis://redis:6379
+
+volumes:
+  postgres_data:
+  redis_data:
+  uploads_data:
+
