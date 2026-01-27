@@ -378,7 +378,7 @@ export default function PostsPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newPostContent, setNewPostContent] = useState("");
   const [newPostAccountId, setNewPostAccountId] = useState("");
-  const [newPostPublishNow, setNewPostPublishNow] = useState(true);
+  const [newPostPublishNow, setNewPostPublishNow] = useState(false);
   const [newPostScheduledAt, setNewPostScheduledAt] = useState("");
   const [newPostTimezone, setNewPostTimezone] = useState("America/Sao_Paulo");
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
@@ -791,7 +791,7 @@ export default function PostsPage() {
         await loadData();
         setNewPostContent("");
         setNewPostAccountId("");
-        setNewPostPublishNow(true);
+        setNewPostPublishNow(false);
         setNewPostScheduledAt("");
         setMediaFiles([]);
         setShowTimezoneDropdown(false);
@@ -1033,6 +1033,7 @@ export default function PostsPage() {
                   }
                   setShowProfilesDropdown(false);
                   setModalProfileSearch("");
+                  setNewPostPublishNow(false);
                   setShowCreateModal(true);
                 }}
                 className="text-black px-4 py-2 rounded-lg hover:opacity-90 transition-colors font-mono font-semibold whitespace-nowrap w-full sm:w-auto text-center"
