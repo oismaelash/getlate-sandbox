@@ -18,6 +18,7 @@ const PLATFORMS = [
   { id: "reddit", name: "Reddit" },
   { id: "google-business", name: "Google Business" },
   { id: "telegram", name: "Telegram" },
+  { id: "snapchat", name: "Snapchat" },
 ];
 
 interface SocialAccount {
