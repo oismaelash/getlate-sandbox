@@ -14,11 +14,11 @@ interface SocialAccount {
 export default function MockOAuthPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  
+
   const platform = searchParams?.get("platform") || "";
   const profileId = searchParams?.get("profileId") || "";
-  const redirectUrl = searchParams?.get("redirect_url") || "/accounts";
-  
+  const redirectUrl = searchParams?.get("redirect_url") || "/dashboard/accounts";
+
   const [accounts, setAccounts] = useState<SocialAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedAccountId, setSelectedAccountId] = useState<string>("");
@@ -26,7 +26,9 @@ export default function MockOAuthPage() {
   const [error, setError] = useState<string | null>(null);
   const [showNewForm, setShowNewForm] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [newAccountPlatform, setNewAccountPlatform] = useState(platform || "instagram");
+  const [newAccountPlatform, setNewAccountPlatform] = useState(
+    platform || "instagram"
+  );
   const [newAccountUsername, setNewAccountUsername] = useState("");
   const [newAccountDisplayName, setNewAccountDisplayName] = useState("");
   const [newAccountProfilePicture, setNewAccountProfilePicture] = useState("");
@@ -41,17 +43,16 @@ export default function MockOAuthPage() {
       if (!res.ok) {
         throw new Error("Failed to load accounts");
       }
-      
+
       const data = await res.json();
       let allAccounts: SocialAccount[] = data.accounts || [];
-      
-      // Filter by platform if specified
+
       if (platform) {
         allAccounts = allAccounts.filter(
           (acc) => acc.platform.toLowerCase() === platform.toLowerCase()
         );
       }
-      
+
       setAccounts(allAccounts);
     } catch (err) {
       console.error("Error loading accounts:", err);
@@ -96,10 +97,8 @@ export default function MockOAuthPage() {
       const data = await res.json();
       const newAccount = data.account;
 
-      // Reload accounts list
       await loadAccounts();
 
-      // Auto-select the newly created account
       setSelectedAccountId(newAccount._id);
       setShowNewForm(false);
       setNewAccountUsername("");
@@ -142,11 +141,10 @@ export default function MockOAuthPage() {
         throw new Error(errorData.error || "Erro ao autorizar");
       }
 
-      // Success - redirect
       if (redirectUrl) {
         router.push(redirectUrl);
       } else {
-        router.push("/accounts");
+        router.push("/dashboard/accounts");
       }
     } catch (err) {
       console.error("Error authorizing:", err);
@@ -158,54 +156,57 @@ export default function MockOAuthPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-lg">Carregando contas...</div>
+      <div className="min-h-screen bg-gray-50 dark:bg-[#222222] text-gray-900 dark:text-white flex items-center justify-center">
+        <div className="text-center text-gray-600 dark:text-gray-400">
+          Carregando contas...
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-8">
-      <div className="max-w-2xl w-full bg-white rounded-lg shadow-lg p-8">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold mb-2">Autorizar Conexão</h1>
-          <p className="text-gray-600">
-            Selecione uma conta {platform && `(${platform})`} para conectar ao profile
+    <div className="min-h-screen bg-gray-50 dark:bg-[#222222] text-gray-900 dark:text-white p-8">
+      <div className="max-w-4xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">Autorizar Conexão</h1>
+          <p className="text-gray-600 dark:text-gray-400">
+            Selecione uma conta {platform && `(${platform})`} para conectar ao
+            profile
           </p>
           {profileId && (
-            <p className="text-sm text-gray-500 mt-2 font-mono">
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 font-mono">
               Profile ID: {profileId}
             </p>
           )}
         </div>
 
         {error && (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded text-red-700">
+          <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-300">
             {error}
           </div>
         )}
 
-        <div className="mb-4">
+        <div className="mb-6">
           <button
             onClick={() => setShowNewForm(!showNewForm)}
-            className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition"
+            className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition"
           >
             {showNewForm ? "Cancelar" : "Criar Nova Conta"}
           </button>
         </div>
 
         {showNewForm && (
-          <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-            <h2 className="text-lg font-semibold mb-3">Nova Conta Social</h2>
-            <div className="space-y-3">
+          <div className="mb-6 bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+            <h2 className="text-xl font-semibold mb-4">Nova Conta Social</h2>
+            <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Platform *</label>
+                <label className="block text-sm font-medium mb-1">
+                  Platform *
+                </label>
                 <select
                   value={newAccountPlatform}
                   onChange={(e) => setNewAccountPlatform(e.target.value)}
-                  className="w-full px-3 py-2 border rounded"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   disabled={!!platform}
                 >
                   <option value="instagram">Instagram</option>
@@ -214,7 +215,7 @@ export default function MockOAuthPage() {
                   <option value="tiktok">TikTok</option>
                 </select>
                 {platform && (
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     Platform fixado: {platform}
                   </p>
                 )}
@@ -225,34 +226,38 @@ export default function MockOAuthPage() {
                   type="text"
                   value={newAccountUsername}
                   onChange={(e) => setNewAccountUsername(e.target.value)}
-                  className="w-full px-3 py-2 border rounded"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                   placeholder="Ex: username"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Display Name</label>
+                <label className="block text-sm font-medium mb-1">
+                  Display Name
+                </label>
                 <input
                   type="text"
                   value={newAccountDisplayName}
                   onChange={(e) => setNewAccountDisplayName(e.target.value)}
-                  className="w-full px-3 py-2 border rounded"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                   placeholder="Nome de exibição"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Profile Picture URL</label>
+                <label className="block text-sm font-medium mb-1">
+                  Profile Picture URL
+                </label>
                 <input
                   type="url"
                   value={newAccountProfilePicture}
                   onChange={(e) => setNewAccountProfilePicture(e.target.value)}
-                  className="w-full px-3 py-2 border rounded"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                   placeholder="https://..."
                 />
               </div>
               <button
                 onClick={handleCreateAccount}
                 disabled={creating || !newAccountPlatform}
-                className="w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition"
               >
                 {creating ? "Criando..." : "Criar Conta"}
               </button>
@@ -261,12 +266,13 @@ export default function MockOAuthPage() {
         )}
 
         {accounts.length === 0 && !showNewForm && (
-          <div className="text-center py-8 text-gray-500">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow text-center text-gray-500 dark:text-gray-400">
             <p className="mb-4">
               Nenhuma conta {platform && `do tipo ${platform}`} encontrada.
             </p>
             <p className="text-sm">
-              Use o botão "Criar Nova Conta" acima para criar uma conta.
+              Use o botão &quot;Criar Nova Conta&quot; acima para criar uma
+              conta.
             </p>
           </div>
         )}
@@ -279,8 +285,8 @@ export default function MockOAuthPage() {
                   key={account._id}
                   className={`block p-4 border-2 rounded-lg cursor-pointer transition ${
                     selectedAccountId === account._id
-                      ? "border-blue-500 bg-blue-50"
-                      : "border-gray-200 hover:border-gray-300"
+                      ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-500"
+                      : "border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 bg-white dark:bg-gray-800"
                   }`}
                 >
                   <div className="flex items-center">
@@ -294,27 +300,29 @@ export default function MockOAuthPage() {
                     />
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="font-semibold capitalize">
+                        <span className="font-semibold capitalize text-gray-900 dark:text-white">
                           {account.platform}
                         </span>
                         {account.username && (
-                          <span className="text-gray-600">@{account.username}</span>
+                          <span className="text-gray-600 dark:text-gray-400">
+                            @{account.username}
+                          </span>
                         )}
                         <span
                           className={`text-xs px-2 py-1 rounded ${
                             account.status === "active"
-                              ? "bg-green-100 text-green-800"
-                              : "bg-gray-100 text-gray-800"
+                              ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300"
+                              : "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300"
                           }`}
                         >
                           {account.status || "active"}
                         </span>
                       </div>
-                      <p className="text-xs text-gray-500 font-mono">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 font-mono">
                         {account._id}
                       </p>
                       {account.profileId && (
-                        <p className="text-xs text-gray-400 mt-1">
+                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                           Atualmente conectado ao profile: {account.profileId}
                         </p>
                       )}
@@ -327,14 +335,14 @@ export default function MockOAuthPage() {
             <div className="flex gap-3">
               <button
                 onClick={() => router.back()}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
+                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 transition"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleAuthorize}
                 disabled={!selectedAccountId || authorizing}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
               >
                 {authorizing ? "Autorizando..." : "Autorizar"}
               </button>
@@ -345,4 +353,3 @@ export default function MockOAuthPage() {
     </div>
   );
 }
-
