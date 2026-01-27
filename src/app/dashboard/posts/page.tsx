@@ -229,6 +229,147 @@ interface Post {
   timezone?: string | null;
 }
 
+// Helper function to get GMT offset string for a timezone
+const getTimezoneOffset = (timezone: string): string => {
+  try {
+    const now = new Date();
+    const utcDate = new Date(now.toLocaleString("en-US", { timeZone: "UTC" }));
+    const tzDate = new Date(now.toLocaleString("en-US", { timeZone: timezone }));
+    const offsetMs = tzDate.getTime() - utcDate.getTime();
+    const offsetHours = offsetMs / (1000 * 60 * 60);
+    
+    if (offsetHours === 0) return "GMT";
+    const sign = offsetHours > 0 ? "+" : "";
+    const hours = Math.floor(Math.abs(offsetHours));
+    const minutes = Math.floor((Math.abs(offsetHours) - hours) * 60);
+    
+    if (minutes === 0) {
+      return `GMT${sign}${hours}`;
+    }
+    return `GMT${sign}${hours}:${minutes.toString().padStart(2, "0")}`;
+  } catch {
+    return "GMT";
+  }
+};
+
+// Timezone data organized by region
+const TIMEZONE_REGIONS: Record<string, string[]> = {
+  Africa: [
+    "Africa/Abidjan", "Africa/Accra", "Africa/Addis Ababa", "Africa/Algiers", "Africa/Asmera",
+    "Africa/Bamako", "Africa/Bangui", "Africa/Banjul", "Africa/Bissau", "Africa/Blantyre",
+    "Africa/Brazzaville", "Africa/Bujumbura", "Africa/Cairo", "Africa/Casablanca", "Africa/Ceuta",
+    "Africa/Conakry", "Africa/Dakar", "Africa/Dar es Salaam", "Africa/Djibouti", "Africa/Douala",
+    "Africa/El Aaiun", "Africa/Freetown", "Africa/Gaborone", "Africa/Harare", "Africa/Johannesburg",
+    "Africa/Juba", "Africa/Kampala", "Africa/Khartoum", "Africa/Kigali", "Africa/Kinshasa",
+    "Africa/Lagos", "Africa/Libreville", "Africa/Lome", "Africa/Luanda", "Africa/Lubumbashi",
+    "Africa/Lusaka", "Africa/Malabo", "Africa/Maputo", "Africa/Maseru", "Africa/Mbabane",
+    "Africa/Mogadishu", "Africa/Monrovia", "Africa/Nairobi", "Africa/Ndjamena", "Africa/Niamey",
+    "Africa/Nouakchott", "Africa/Ouagadougou", "Africa/Porto-Novo", "Africa/Sao Tome", "Africa/Tripoli",
+    "Africa/Tunis", "Africa/Windhoek",
+  ],
+  America: [
+    "America/Adak", "America/Anchorage", "America/Anguilla", "America/Antigua", "America/Araguaina",
+    "America/Argentina/La Rioja", "America/Argentina/Rio Gallegos", "America/Argentina/Salta",
+    "America/Argentina/San Juan", "America/Argentina/San Luis", "America/Argentina/Tucuman",
+    "America/Argentina/Ushuaia", "America/Aruba", "America/Asuncion", "America/Bahia",
+    "America/Bahia Banderas", "America/Barbados", "America/Belem", "America/Belize",
+    "America/Blanc-Sablon", "America/Boa Vista", "America/Bogota", "America/Boise",
+    "America/Buenos Aires", "America/Cambridge Bay", "America/Campo Grande", "America/Cancun",
+    "America/Caracas", "America/Catamarca", "America/Cayenne", "America/Cayman", "America/Chicago",
+    "America/Chihuahua", "America/Ciudad Juarez", "America/Coral Harbour", "America/Cordoba",
+    "America/Costa Rica", "America/Coyhaique", "America/Creston", "America/Cuiaba", "America/Curacao",
+    "America/Danmarkshavn", "America/Dawson", "America/Dawson Creek", "America/Denver",
+    "America/Detroit", "America/Dominica", "America/Edmonton", "America/Eirunepe", "America/El Salvador",
+    "America/Fort Nelson", "America/Fortaleza", "America/Glace Bay", "America/Godthab",
+    "America/Goose Bay", "America/Grand Turk", "America/Grenada", "America/Guadeloupe",
+    "America/Guatemala", "America/Guayaquil", "America/Guyana", "America/Halifax", "America/Havana",
+    "America/Hermosillo", "America/Indiana/Knox", "America/Indiana/Marengo", "America/Indiana/Petersburg",
+    "America/Indiana/Tell City", "America/Indiana/Vevay", "America/Indiana/Vincennes",
+    "America/Indiana/Winamac", "America/Indianapolis", "America/Inuvik", "America/Iqaluit",
+    "America/Jamaica", "America/Jujuy", "America/Juneau", "America/Kentucky/Monticello",
+    "America/Kralendijk", "America/La Paz", "America/Lima", "America/Los Angeles", "America/Louisville",
+    "America/Lower Princes", "America/Maceio", "America/Managua", "America/Manaus", "America/Marigot",
+    "America/Martinique", "America/Matamoros", "America/Mazatlan", "America/Mendoza",
+    "America/Menominee", "America/Merida", "America/Metlakatla", "America/Mexico City",
+    "America/Miquelon", "America/Moncton", "America/Monterrey", "America/Montevideo",
+    "America/Montserrat", "America/Nassau", "America/New York", "America/Nome", "America/Noronha",
+    "America/North Dakota/Beulah", "America/North Dakota/Center", "America/North Dakota/New Salem",
+    "America/Ojinaga", "America/Panama", "America/Paramaribo", "America/Phoenix", "America/Port of Spain",
+    "America/Port-au-Prince", "America/Porto Velho", "America/Puerto Rico", "America/Punta Arenas",
+    "America/Rankin Inlet", "America/Recife", "America/Regina", "America/Resolute", "America/Rio Branco",
+    "America/Santarem", "America/Santiago", "America/Santo Domingo", "America/Sao Paulo",
+    "America/Scoresbysund", "America/Sitka", "America/St Barthelemy", "America/St Johns",
+    "America/St Kitts", "America/St Lucia", "America/St Thomas", "America/St Vincent",
+    "America/Swift Current", "America/Tegucigalpa", "America/Thule", "America/Tijuana",
+    "America/Toronto", "America/Tortola", "America/Vancouver", "America/Whitehorse",
+    "America/Winnipeg", "America/Yakutat",
+  ],
+  Antarctica: [
+    "Antarctica/Casey", "Antarctica/Davis", "Antarctica/DumontDUrville", "Antarctica/Macquarie",
+    "Antarctica/Mawson", "Antarctica/McMurdo", "Antarctica/Palmer", "Antarctica/Rothera",
+    "Antarctica/Syowa", "Antarctica/Troll", "Antarctica/Vostok",
+  ],
+  Arctic: [
+    "Arctic/Longyearbyen",
+  ],
+  Asia: [
+    "Asia/Aden", "Asia/Almaty", "Asia/Amman", "Asia/Anadyr", "Asia/Aqtau", "Asia/Aqtobe",
+    "Asia/Ashgabat", "Asia/Atyrau", "Asia/Baghdad", "Asia/Bahrain", "Asia/Baku", "Asia/Bangkok",
+    "Asia/Barnaul", "Asia/Beirut", "Asia/Bishkek", "Asia/Brunei", "Asia/Calcutta", "Asia/Chita",
+    "Asia/Colombo", "Asia/Damascus", "Asia/Dhaka", "Asia/Dili", "Asia/Dubai", "Asia/Dushanbe",
+    "Asia/Famagusta", "Asia/Gaza", "Asia/Hebron", "Asia/Hong Kong", "Asia/Hovd", "Asia/Irkutsk",
+    "Asia/Jakarta", "Asia/Jayapura", "Asia/Jerusalem", "Asia/Kabul", "Asia/Kamchatka",
+    "Asia/Karachi", "Asia/Katmandu", "Asia/Khandyga", "Asia/Krasnoyarsk", "Asia/Kuala Lumpur",
+    "Asia/Kuching", "Asia/Kuwait", "Asia/Macau", "Asia/Magadan", "Asia/Makassar", "Asia/Manila",
+    "Asia/Muscat", "Asia/Nicosia", "Asia/Novokuznetsk", "Asia/Novosibirsk", "Asia/Omsk", "Asia/Oral",
+    "Asia/Phnom Penh", "Asia/Pontianak", "Asia/Pyongyang", "Asia/Qatar", "Asia/Qostanay",
+    "Asia/Qyzylorda", "Asia/Rangoon", "Asia/Riyadh", "Asia/Saigon", "Asia/Sakhalin",
+    "Asia/Samarkand", "Asia/Seoul", "Asia/Shanghai", "Asia/Singapore", "Asia/Srednekolymsk",
+    "Asia/Taipei", "Asia/Tashkent", "Asia/Tbilisi", "Asia/Tehran", "Asia/Thimphu", "Asia/Tokyo",
+    "Asia/Tomsk", "Asia/Ulaanbaatar", "Asia/Urumqi", "Asia/Ust-Nera", "Asia/Vientiane",
+    "Asia/Vladivostok", "Asia/Yakutsk", "Asia/Yekaterinburg", "Asia/Yerevan",
+  ],
+  Atlantic: [
+    "Atlantic/Azores", "Atlantic/Bermuda", "Atlantic/Canary", "Atlantic/Cape Verde",
+    "Atlantic/Faeroe", "Atlantic/Madeira", "Atlantic/Reykjavik", "Atlantic/South Georgia",
+    "Atlantic/St Helena", "Atlantic/Stanley",
+  ],
+  Australia: [
+    "Australia/Adelaide", "Australia/Brisbane", "Australia/Broken Hill", "Australia/Darwin",
+    "Australia/Eucla", "Australia/Hobart", "Australia/Lindeman", "Australia/Lord Howe",
+    "Australia/Melbourne", "Australia/Perth", "Australia/Sydney",
+  ],
+  Europe: [
+    "Europe/Amsterdam", "Europe/Andorra", "Europe/Astrakhan", "Europe/Athens", "Europe/Belgrade",
+    "Europe/Berlin", "Europe/Bratislava", "Europe/Brussels", "Europe/Bucharest", "Europe/Budapest",
+    "Europe/Busingen", "Europe/Chisinau", "Europe/Copenhagen", "Europe/Dublin", "Europe/Gibraltar",
+    "Europe/Guernsey", "Europe/Helsinki", "Europe/Isle of Man", "Europe/Istanbul", "Europe/Jersey",
+    "Europe/Kaliningrad", "Europe/Kiev", "Europe/Kirov", "Europe/Lisbon", "Europe/Ljubljana",
+    "Europe/London", "Europe/Luxembourg", "Europe/Madrid", "Europe/Malta", "Europe/Mariehamn",
+    "Europe/Minsk", "Europe/Monaco", "Europe/Moscow", "Europe/Oslo", "Europe/Paris",
+    "Europe/Podgorica", "Europe/Prague", "Europe/Riga", "Europe/Rome", "Europe/Samara",
+    "Europe/San Marino", "Europe/Sarajevo", "Europe/Saratov", "Europe/Simferopol", "Europe/Skopje",
+    "Europe/Sofia", "Europe/Stockholm", "Europe/Tallinn", "Europe/Tirane", "Europe/Ulyanovsk",
+    "Europe/Vaduz", "Europe/Vatican", "Europe/Vienna", "Europe/Vilnius", "Europe/Volgograd",
+    "Europe/Warsaw", "Europe/Zagreb", "Europe/Zurich",
+  ],
+  Indian: [
+    "Indian/Antananarivo", "Indian/Chagos", "Indian/Christmas", "Indian/Cocos", "Indian/Comoro",
+    "Indian/Kerguelen", "Indian/Mahe", "Indian/Maldives", "Indian/Mauritius", "Indian/Mayotte",
+    "Indian/Reunion",
+  ],
+  Pacific: [
+    "Pacific/Apia", "Pacific/Auckland", "Pacific/Bougainville", "Pacific/Chatham", "Pacific/Easter",
+    "Pacific/Efate", "Pacific/Enderbury", "Pacific/Fakaofo", "Pacific/Fiji", "Pacific/Funafuti",
+    "Pacific/Galapagos", "Pacific/Gambier", "Pacific/Guadalcanal", "Pacific/Guam", "Pacific/Honolulu",
+    "Pacific/Kiritimati", "Pacific/Kosrae", "Pacific/Kwajalein", "Pacific/Majuro", "Pacific/Marquesas",
+    "Pacific/Midway", "Pacific/Nauru", "Pacific/Niue", "Pacific/Norfolk", "Pacific/Noumea",
+    "Pacific/Pago Pago", "Pacific/Palau", "Pacific/Pitcairn", "Pacific/Ponape", "Pacific/Port Moresby",
+    "Pacific/Rarotonga", "Pacific/Saipan", "Pacific/Tahiti", "Pacific/Tarawa", "Pacific/Tongatapu",
+    "Pacific/Truk", "Pacific/Wake", "Pacific/Wallis",
+  ],
+};
+
 export default function PostsPage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -247,6 +388,8 @@ export default function PostsPage() {
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [loadingPostDetails, setLoadingPostDetails] = useState(false);
   const [showProfilesDropdown, setShowProfilesDropdown] = useState(false);
+  const [showTimezoneDropdown, setShowTimezoneDropdown] = useState(false);
+  const [timezoneSearch, setTimezoneSearch] = useState("");
   const [modalProfileSearch, setModalProfileSearch] = useState("");
   const [selectedProfileIdForPost, setSelectedProfileIdForPost] = useState<string | null>(null);
   const [showConnectModal, setShowConnectModal] = useState(false);
@@ -651,6 +794,8 @@ export default function PostsPage() {
         setNewPostPublishNow(true);
         setNewPostScheduledAt("");
         setMediaFiles([]);
+        setShowTimezoneDropdown(false);
+        setTimezoneSearch("");
         setShowCreateModal(false);
       } else {
         const error = await res.json();
@@ -1609,7 +1754,11 @@ export default function PostsPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setShowCreateModal(false)}
+                  onClick={() => {
+                    setShowTimezoneDropdown(false);
+                    setTimezoneSearch("");
+                    setShowCreateModal(false);
+                  }}
                   className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2035,13 +2184,16 @@ export default function PostsPage() {
                               type="button"
                               className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-3 text-gray-900 dark:text-white font-mono text-sm flex items-center justify-between hover:border-gray-400 dark:hover:border-gray-600 transition-colors"
                               aria-haspopup="listbox"
-                              aria-expanded="false"
+                              aria-expanded={showTimezoneDropdown}
+                              onClick={() => setShowTimezoneDropdown((v) => !v)}
                             >
                               <span className="truncate text-left pr-2">
-                                {newPostTimezone} (current)
+                                {newPostTimezone} ({getTimezoneOffset(newPostTimezone)}) (current)
                               </span>
                               <svg
-                                className="w-4 h-4 text-gray-400 transition-transform"
+                                className={`w-4 h-4 text-gray-400 transition-transform ${
+                                  showTimezoneDropdown ? "rotate-180" : ""
+                                }`}
                                 viewBox="0 0 20 20"
                                 fill="currentColor"
                               >
@@ -2052,6 +2204,69 @@ export default function PostsPage() {
                                 ></path>
                               </svg>
                             </button>
+
+                            {showTimezoneDropdown && (
+                              <div className="absolute z-50 mt-2 w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl overflow-hidden">
+                                <div className="p-2 border-b border-gray-200 dark:border-gray-700">
+                                  <input
+                                    placeholder="Search: city, region, GMT offset"
+                                    className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md px-3 py-2 text-gray-900 dark:text-white placeholder-gray-500 focus:border-gray-300 dark:focus:border-gray-600 focus:outline-none font-mono text-sm"
+                                    type="text"
+                                    value={timezoneSearch}
+                                    onChange={(e) => setTimezoneSearch(e.target.value)}
+                                    onClick={(e) => e.stopPropagation()}
+                                  />
+                                </div>
+                                <div className="max-h-64 overflow-auto">
+                                  {Object.entries(TIMEZONE_REGIONS).map(([region, timezones]) => {
+                                    const filteredTimezones = timezones.filter((tz) => {
+                                      if (!timezoneSearch) return true;
+                                      const searchLower = timezoneSearch.toLowerCase();
+                                      const offset = getTimezoneOffset(tz);
+                                      return (
+                                        tz.toLowerCase().includes(searchLower) ||
+                                        region.toLowerCase().includes(searchLower) ||
+                                        offset.toLowerCase().includes(searchLower)
+                                      );
+                                    });
+
+                                    if (filteredTimezones.length === 0) return null;
+
+                                    return (
+                                      <div key={region}>
+                                        <div className="px-3 py-2 text-[10px] uppercase tracking-wider text-gray-500 bg-gray-100 dark:bg-gray-800/50 font-mono sticky top-0">
+                                          {region}
+                                        </div>
+                                        {filteredTimezones.map((tz) => {
+                                          const offset = getTimezoneOffset(tz);
+                                          const isSelected = newPostTimezone === tz;
+                                          return (
+                                            <button
+                                              key={tz}
+                                              type="button"
+                                              className={`w-full text-left px-3 py-2 text-sm font-mono transition-colors ${
+                                                isSelected
+                                                  ? "bg-blue-600/20 text-blue-200"
+                                                  : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+                                              }`}
+                                              onClick={() => {
+                                                setNewPostTimezone(tz);
+                                                setShowTimezoneDropdown(false);
+                                                setTimezoneSearch("");
+                                              }}
+                                            >
+                                              <span className="truncate block">
+                                                {tz} ({offset})
+                                              </span>
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </>
@@ -2064,7 +2279,11 @@ export default function PostsPage() {
               <button
                 type="button"
                 className="px-4 py-2 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-200 font-mono text-sm"
-                onClick={() => setShowCreateModal(false)}
+                onClick={() => {
+                  setShowTimezoneDropdown(false);
+                  setTimezoneSearch("");
+                  setShowCreateModal(false);
+                }}
               >
                 cancel
               </button>
