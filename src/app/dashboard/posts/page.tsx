@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { X, ChevronDown, Search, Check, Filter, Calendar, Users } from "lucide-react";
 import { inferContentType, type MediaItem } from "@/lib/post-utils";
 
@@ -443,6 +443,7 @@ export default function PostsPage() {
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newPostContent, setNewPostContent] = useState("");
+  const contentTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [newPostAccountId, setNewPostAccountId] = useState("");
   const [newPostPublishNow, setNewPostPublishNow] = useState(false);
   const [newPostScheduledAt, setNewPostScheduledAt] = useState("");
@@ -682,6 +683,14 @@ export default function PostsPage() {
       previews.forEach((url) => URL.revokeObjectURL(url));
     };
   }, [mediaFiles]);
+
+  useEffect(() => {
+    // Auto-resize textarea quando conteúdo mudar
+    if (contentTextareaRef.current) {
+      contentTextareaRef.current.style.height = "auto";
+      contentTextareaRef.current.style.height = `${contentTextareaRef.current.scrollHeight}px`;
+    }
+  }, [newPostContent]);
 
   async function loadData() {
     try {
@@ -1913,12 +1922,20 @@ export default function PostsPage() {
                   </label>
                   <div className="relative">
                     <textarea
+                      ref={contentTextareaRef}
                       className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-3 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:border-gray-300 dark:border-gray-600 focus:outline-none transition-all resize-none overflow-hidden font-mono text-sm"
                       rows={4}
                       placeholder="what's on your mind..."
                       required
                       value={newPostContent}
-                      onChange={(e) => setNewPostContent(e.target.value)}
+                      onChange={(e) => {
+                        setNewPostContent(e.target.value);
+                        // Auto-resize on change
+                        if (contentTextareaRef.current) {
+                          contentTextareaRef.current.style.height = "auto";
+                          contentTextareaRef.current.style.height = `${contentTextareaRef.current.scrollHeight}px`;
+                        }
+                      }}
                     />
                     <div className="absolute bottom-3 right-3 text-xs font-mono text-gray-400">
                       {newPostContent.length} chars
