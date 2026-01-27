@@ -107,6 +107,21 @@ const PLATFORMS = [
   },
 ];
 
+// Character limits for each platform
+const PLATFORM_CHAR_LIMITS: Record<string, number> = {
+  twitter: 280,
+  instagram: 2200,
+  facebook: 63206,
+  linkedin: 3000,
+  tiktok: 2200,
+  youtube: 5000,
+  pinterest: 500,
+  reddit: 40000,
+  bluesky: 300,
+  threads: 500,
+  googlebusiness: 1500,
+};
+
 // Small platform icon for badges (scaled down)
 const PlatformIconSmall = ({ platform }: { platform: string }) => {
   const iconPath = PLATFORMS.find((p) => p.id === platform)?.icon;
@@ -808,6 +823,47 @@ export default function PostsPage() {
     if (!newPostPublishNow && !newPostScheduledAt) {
       alert("Selecione uma data para agendamento");
       return;
+    }
+
+    // Validar limite de caracteres baseado nas plataformas dos perfis selecionados
+    if (selectedProfileIdForPost.length > 0 && newPostContent) {
+      const profileAccounts = accounts.filter((a) =>
+        selectedProfileIdForPost.includes(a.profile._id || "")
+      );
+      
+      if (profileAccounts.length > 0) {
+        // Encontrar a plataforma mais restritiva entre todas as contas dos perfis selecionados
+        const contentLength = newPostContent.length;
+        const platformLimits = profileAccounts
+          .map((account) => {
+            const platformId = account.platform.toLowerCase();
+            const limit = PLATFORM_CHAR_LIMITS[platformId];
+            return {
+              platform: account.platform,
+              platformName: PLATFORMS.find((p) => p.id === platformId)?.name || account.platform,
+              limit: limit || Infinity,
+            };
+          })
+          .filter((p) => p.limit !== Infinity)
+          .sort((a, b) => a.limit - b.limit);
+
+        if (platformLimits.length > 0) {
+          const mostRestrictive = platformLimits[0];
+          
+          if (contentLength > mostRestrictive.limit) {
+            const overLimit = contentLength - mostRestrictive.limit;
+            const message = `O conteúdo excede o limite de caracteres da plataforma mais restritiva.\n\n` +
+              `Plataforma: ${mostRestrictive.platformName}\n` +
+              `Limite: ${mostRestrictive.limit} caracteres\n` +
+              `Seu conteúdo: ${contentLength} caracteres\n` +
+              `Excesso: ${overLimit} caracteres\n\n` +
+              `Por favor, reduza o conteúdo para continuar.`;
+            
+            alert(message);
+            return;
+          }
+        }
+      }
     }
 
     setCreating(true);
