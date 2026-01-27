@@ -25,6 +25,7 @@ export default function DashboardLayout({
             <span className="text-xl font-bold text-gray-900 dark:text-white font-mono whitespace-nowrap">
               Late
             </span>
+            <span className="text-xs text-[#a1a1aa] ml-1">Sandbox</span>
           </Link>
           <div className="flex items-center gap-2 sm:gap-3 justify-end flex-shrink-0">
             <ThemeToggle />

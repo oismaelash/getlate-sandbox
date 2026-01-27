@@ -56,6 +56,7 @@ export default function ConnectionsPage() {
   const [creating, setCreating] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
+  const dropdownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [newProfileName, setNewProfileName] = useState("");
   const [newProfileDescription, setNewProfileDescription] = useState("");
   const [newProfileColor, setNewProfileColor] = useState("#ffeda0");
@@ -91,6 +92,15 @@ export default function ConnectionsPage() {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [showProfileDropdown]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (dropdownTimeoutRef.current) {
+        clearTimeout(dropdownTimeoutRef.current);
+      }
+    };
+  }, []);
 
   async function loadData() {
     try {
@@ -424,8 +434,18 @@ export default function ConnectionsPage() {
           <div 
             className="relative" 
             ref={profileDropdownRef}
-            onMouseEnter={() => setShowProfileDropdown(true)}
-            onMouseLeave={() => setShowProfileDropdown(false)}
+            onMouseEnter={() => {
+              if (dropdownTimeoutRef.current) {
+                clearTimeout(dropdownTimeoutRef.current);
+                dropdownTimeoutRef.current = null;
+              }
+              setShowProfileDropdown(true);
+            }}
+            onMouseLeave={() => {
+              dropdownTimeoutRef.current = setTimeout(() => {
+                setShowProfileDropdown(false);
+              }, 200);
+            }}
           >
             <button
               type="button"
@@ -472,7 +492,20 @@ export default function ConnectionsPage() {
               </svg>
             </button>
             {showProfileDropdown && (
-              <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-auto">
+              <div 
+                className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-auto"
+                onMouseEnter={() => {
+                  if (dropdownTimeoutRef.current) {
+                    clearTimeout(dropdownTimeoutRef.current);
+                    dropdownTimeoutRef.current = null;
+                  }
+                }}
+                onMouseLeave={() => {
+                  dropdownTimeoutRef.current = setTimeout(() => {
+                    setShowProfileDropdown(false);
+                  }, 200);
+                }}
+              >
                 {profiles.map((profile) => (
                   <button
                     key={profile._id}

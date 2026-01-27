@@ -17,6 +17,9 @@ interface Account {
   username: string | null;
   displayName?: string | null;
   profilePicture?: string | null;
+  metadata?: {
+    profilePicture?: string | null;
+  };
   profile: {
     _id?: string;
     name: string;
@@ -103,6 +106,54 @@ const PLATFORMS = [
     icon: <path d="M12.206.793c.99 0 4.347.276 5.93 3.821.529 1.193.403 3.219.299 4.847l-.003.06c-.012.18-.022.345-.03.51.075.045.203.09.401.09.3-.016.659-.12 1.033-.301.165-.088.344-.104.464-.104.182 0 .359.029.509.09.45.149.734.479.734.838.015.449-.39.839-1.213 1.168-.089.029-.209.075-.344.119-.45.135-1.139.36-1.333.81-.09.224-.061.524.12.868l.015.015c.06.136 1.526 3.475 4.791 4.014.255.044.435.27.42.509 0 .075-.015.149-.045.225-.24.569-1.273.988-3.146 1.271-.059.091-.12.375-.164.57-.029.179-.074.36-.134.553-.076.271-.27.405-.555.405h-.03c-.135 0-.313-.031-.538-.074-.36-.075-.765-.135-1.273-.135-.3 0-.599.015-.913.074-.6.104-1.123.464-1.723.884-.853.599-1.826 1.288-3.294 1.288-.06 0-.119-.015-.18-.015h-.149c-1.468 0-2.427-.675-3.279-1.288-.599-.42-1.107-.779-1.707-.884-.314-.045-.629-.074-.928-.074-.54 0-.958.089-1.272.149-.211.043-.391.074-.54.074-.374 0-.523-.224-.583-.42-.061-.192-.09-.389-.135-.567-.046-.181-.105-.494-.166-.57-1.918-.222-2.95-.642-3.189-1.226-.031-.063-.052-.12-.063-.18-.015-.045-.015-.104-.015-.165.015-.239.21-.465.465-.509 3.257-.539 4.731-3.879 4.791-4.02l.016-.029c.18-.345.224-.645.119-.869-.195-.434-.884-.658-1.332-.809-.121-.029-.24-.074-.346-.119-.732-.27-1.226-.63-1.2-1.093.03-.464.491-.838.991-.838.105 0 .359.015.509.09.45.18.811.271 1.08.286.21 0 .324-.045.375-.104-.015-.18-.03-.359-.045-.539-.105-1.809-.27-4.079.254-5.272C7.717 1.069 11.066.793 12.041.793h.166z"></path>
   },
 ];
+
+// Small platform icon for badges (scaled down)
+const PlatformIconSmall = ({ platform }: { platform: string }) => {
+  const iconPath = PLATFORMS.find((p) => p.id === platform)?.icon;
+  if (!iconPath) return null;
+  
+  return (
+    <div className="scale-[0.5]">
+      <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+        {iconPath}
+      </svg>
+    </div>
+  );
+};
+
+// Get platform badge style
+const getPlatformBadgeStyle = (platform: string) => {
+  switch (platform) {
+    case "instagram":
+      return "bg-gradient-to-br from-purple-600 to-pink-500";
+    case "tiktok":
+      return "bg-black";
+    case "facebook":
+      return "bg-[#1877F2]";
+    case "youtube":
+      return "bg-[#FF0000]";
+    case "linkedin":
+      return "bg-[#0A66C2]";
+    case "twitter":
+      return "bg-black";
+    case "threads":
+      return "bg-black";
+    case "pinterest":
+      return "bg-[#E60023]";
+    case "reddit":
+      return "bg-[#FF4500]";
+    case "bluesky":
+      return "bg-[#1185FE]";
+    case "googlebusiness":
+      return "bg-gradient-to-br from-blue-500 to-green-500";
+    case "telegram":
+      return "bg-[#0088CC]";
+    case "snapchat":
+      return "bg-yellow-400";
+    default:
+      return "bg-gray-900";
+  }
+};
 
 // Platform icons for the empty state grid
 const PlatformIcon = ({ platform }: { platform: string }) => {
@@ -391,7 +442,7 @@ export default function PostsPage() {
   const [showTimezoneDropdown, setShowTimezoneDropdown] = useState(false);
   const [timezoneSearch, setTimezoneSearch] = useState("");
   const [modalProfileSearch, setModalProfileSearch] = useState("");
-  const [selectedProfileIdForPost, setSelectedProfileIdForPost] = useState<string | null>(null);
+  const [selectedProfileIdForPost, setSelectedProfileIdForPost] = useState<string[]>([]);
   const [showConnectModal, setShowConnectModal] = useState(false);
   const [selectedPlatform, setSelectedPlatform] = useState("");
   const [newAccountUsername, setNewAccountUsername] = useState("");
@@ -687,6 +738,22 @@ export default function PostsPage() {
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files || []);
     setMediaFiles(files);
+    
+    // Check if there's a PDF and if the selected account doesn't support PDF
+    const hasPdf = files.some(
+      (file) =>
+        file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")
+    );
+    
+    if (hasPdf && newPostAccountId) {
+      const selectedAccount = accounts.find((a) => a._id === newPostAccountId);
+      if (selectedAccount) {
+        const pdfSupportedPlatforms = ["linkedin", "facebook"];
+        if (!pdfSupportedPlatforms.includes(selectedAccount.platform.toLowerCase())) {
+          setNewPostAccountId("");
+        }
+      }
+    }
   }
 
   function removeMediaFile(index: number) {
@@ -702,7 +769,7 @@ export default function PostsPage() {
     setMediaFiles([]);
     setShowTimezoneDropdown(false);
     setTimezoneSearch("");
-    setSelectedProfileIdForPost(null);
+    setSelectedProfileIdForPost([]);
     setModalProfileSearch("");
     setShowProfilesDropdown(false);
   }
@@ -1030,7 +1097,7 @@ export default function PostsPage() {
                 onClick={() => {
                   // Pré-selecionar o profile padrão e primeira conta dele, se existir
                   const initialProfileId = defaultProfile?._id ?? null;
-                  setSelectedProfileIdForPost(initialProfileId);
+                  setSelectedProfileIdForPost(initialProfileId ? [initialProfileId] : []);
                   if (initialProfileId) {
                     const profileAccounts = accounts.filter(
                       (a) => a.profile._id === initialProfileId
@@ -1489,7 +1556,7 @@ export default function PostsPage() {
                 <button
                   onClick={() => {
                     const initialProfileId = defaultProfile?._id ?? null;
-                    setSelectedProfileIdForPost(initialProfileId);
+                    setSelectedProfileIdForPost(initialProfileId ? [initialProfileId] : []);
                     if (initialProfileId) {
                       const profileAccounts = accounts.filter(
                         (a) => a.profile._id === initialProfileId
@@ -1746,7 +1813,7 @@ export default function PostsPage() {
 
       {/* Create Post Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 p-2 md:p-4">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-end md:items-center justify-center z-50 p-0 md:p-4 overflow-x-hidden create-post-modal-overlay">
           <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 md:border rounded-t-2xl md:rounded-lg w-full max-w-full md:max-w-3xl mx-2 md:mx-0 h-[95vh] max-h-[95vh] md:h-auto md:max-h-[90vh] overflow-hidden shadow-2xl transition-colors create-post-modal dashboard-panel flex flex-col">
             <div className="flex justify-between items-center px-4 py-4 md:p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
               <div>
@@ -1967,7 +2034,7 @@ export default function PostsPage() {
                       >
                         <div className="flex items-center gap-3 min-w-0 flex-1">
                           <div className="flex items-center gap-2 min-w-0 flex-1">
-                            {selectedProfileIdForPost ? (
+                            {selectedProfileIdForPost.length > 0 ? (
                               <>
                                 <div className="flex items-center gap-1 min-w-0">
                                   <div
@@ -1976,7 +2043,9 @@ export default function PostsPage() {
                                   />
                                 </div>
                                 <span className="text-left truncate">
-                                  {profiles.find((p) => p._id === selectedProfileIdForPost)?.name || "Selected profile"}
+                                  {selectedProfileIdForPost.length === 1
+                                    ? profiles.find((p) => p._id === selectedProfileIdForPost[0])?.name || "Selected profile"
+                                    : `${selectedProfileIdForPost.length} profiles selected`}
                                 </span>
                               </>
                             ) : (
@@ -1988,7 +2057,7 @@ export default function PostsPage() {
                         </div>
                         <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 font-mono">
                           <span>
-                            {selectedProfileIdForPost ? "1" : "0"}/{profiles.length || 1}
+                            {selectedProfileIdForPost.length}/{profiles.length || 0}
                           </span>
                           <svg
                             className="w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform"
@@ -2019,8 +2088,7 @@ export default function PostsPage() {
                                 type="button"
                                 className="hover:text-gray-900 dark:hover:text-white"
                                 onClick={() => {
-                                  const first = profiles[0];
-                                  setSelectedProfileIdForPost(first?._id ?? null);
+                                  setSelectedProfileIdForPost(profiles.map((p) => p._id));
                                 }}
                               >
                                 Select All ({profiles.length || 0})
@@ -2028,12 +2096,12 @@ export default function PostsPage() {
                               <button
                                 type="button"
                                 className="hover:text-gray-900 dark:hover:text-white"
-                                onClick={() => setSelectedProfileIdForPost(null)}
+                                onClick={() => setSelectedProfileIdForPost([])}
                               >
                                 Clear
                               </button>
                               <span>
-                                {selectedProfileIdForPost ? "1" : "0"}/1
+                                {selectedProfileIdForPost.length}/{profiles.length || 0}
                               </span>
                             </div>
                           </div>
@@ -2045,14 +2113,23 @@ export default function PostsPage() {
                                   : true
                               )
                               .map((profile) => {
-                                const checked = selectedProfileIdForPost === profile._id;
+                                const checked = selectedProfileIdForPost.includes(profile._id);
                                 return (
                                   <button
                                     key={profile._id}
                                     type="button"
-                                    onClick={() =>
-                                      setSelectedProfileIdForPost(checked ? null : profile._id)
-                                    }
+                                    onClick={() => {
+                                      if (checked) {
+                                        setSelectedProfileIdForPost(
+                                          selectedProfileIdForPost.filter((id) => id !== profile._id)
+                                        );
+                                      } else {
+                                        setSelectedProfileIdForPost([
+                                          ...selectedProfileIdForPost,
+                                          profile._id,
+                                        ]);
+                                      }
+                                    }}
                                     className={`w-full flex items-start gap-3 px-3 py-2 text-left text-sm transition-colors ${
                                       checked
                                         ? "bg-blue-500/10 text-gray-100"
@@ -2087,13 +2164,13 @@ export default function PostsPage() {
                                 );
                               })}
                           </div>
-                          {selectedProfileIdForPost && (
+                          {selectedProfileIdForPost.length > 0 && (
                             <div className="px-3 py-2 border-t border-gray-100 dark:border-gray-800 text-xs text-gray-400 font-mono">
                               Selected:{" "}
-                              {
-                                profiles.find((p) => p._id === selectedProfileIdForPost)
-                                  ?.name
-                              }
+                              {selectedProfileIdForPost
+                                .map((id) => profiles.find((p) => p._id === id)?.name)
+                                .filter(Boolean)
+                                .join(", ")}
                             </div>
                           )}
                         </div>
@@ -2104,8 +2181,8 @@ export default function PostsPage() {
 
                 <div className="space-y-4">
                   <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 font-mono">
-                    platforms (from {selectedProfileIdForPost ? "1" : "0"} profile
-                    {selectedProfileIdForPost ? "" : "s"})
+                    platforms (from {selectedProfileIdForPost.length} profile
+                    {selectedProfileIdForPost.length !== 1 ? "s" : ""})
                   </label>
                   <div className="flex flex-col gap-2">
                     <div className="flex flex-col md:flex-row md:items-center gap-2">
@@ -2122,10 +2199,10 @@ export default function PostsPage() {
                     </div>
                   </div>
                   <div className="mt-2">
-                    {selectedProfileIdForPost
+                    {selectedProfileIdForPost.length > 0
                       ? (() => {
-                          const profileAccounts = accounts.filter(
-                            (a) => a.profile._id === selectedProfileIdForPost
+                          const profileAccounts = accounts.filter((a) =>
+                            selectedProfileIdForPost.includes(a.profile._id)
                           );
 
                           if (profileAccounts.length === 0) {
@@ -2142,6 +2219,14 @@ export default function PostsPage() {
                             );
                           }
 
+                          // Check if there's a PDF in the media files
+                          const hasPdf = mediaFiles.some(
+                            (file) =>
+                              file.type === "application/pdf" ||
+                              file.name.toLowerCase().endsWith(".pdf")
+                          );
+                          const pdfSupportedPlatforms = ["linkedin", "facebook"];
+
                           return (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                               {profileAccounts.map((account) => {
@@ -2149,45 +2234,85 @@ export default function PostsPage() {
                                   (p) => p.id === account.platform
                                 );
                                 const isSelected = newPostAccountId === account._id;
+                                const supportsPdf = pdfSupportedPlatforms.includes(
+                                  account.platform.toLowerCase()
+                                );
+                                const isDisabled = hasPdf && !supportsPdf;
+
                                 return (
                                   <button
                                     key={account._id}
                                     type="button"
-                                    onClick={() => setNewPostAccountId(account._id)}
-                                    className={`p-4 rounded-lg border transition-all duration-200 text-left relative bg-gray-900 ${
-                                      isSelected
-                                        ? "border-yellow-300 ring-1 ring-yellow-300/70"
-                                        : "border-gray-700 hover:border-gray-500 hover:bg-gray-800"
+                                    onClick={() => {
+                                      if (!isDisabled) {
+                                        setNewPostAccountId(account._id);
+                                      }
+                                    }}
+                                    disabled={isDisabled}
+                                    className={`p-4 rounded-lg border transition-all duration-200 text-left relative ${
+                                      isDisabled
+                                        ? "border-gray-300 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 opacity-50 cursor-not-allowed"
+                                        : "border-gray-700 hover:border-gray-500 hover:bg-gray-800 bg-gray-900"
                                     }`}
                                   >
                                     <div className="flex items-center gap-3">
                                       <div className="relative w-10 h-10">
-                                        {account.profilePicture ? (
+                                        {account.metadata?.profilePicture ? (
                                           <img
-                                            src={account.profilePicture}
+                                            src={account.metadata.profilePicture}
                                             alt={account.username || ""}
-                                            className="w-10 h-10 rounded-lg object-cover border border-gray-700"
+                                            className="w-10 h-10 rounded-lg object-cover border border-gray-200 dark:border-gray-700"
+                                            referrerPolicy="no-referrer"
+                                            onError={(e) => {
+                                              const target = e.target as HTMLImageElement;
+                                              target.style.display = "none";
+                                              const fallback = target.nextElementSibling as HTMLElement;
+                                              if (fallback) {
+                                                fallback.style.display = "flex";
+                                              }
+                                            }}
                                           />
-                                        ) : (
-                                          <div className="w-10 h-10 rounded-lg bg-gray-800 flex items-center justify-center text-white border border-gray-700">
+                                        ) : null}
+                                        <div
+                                          className={`w-10 h-10 rounded-lg flex items-center justify-center text-white border border-gray-200 dark:border-gray-700 ${
+                                            account.metadata?.profilePicture
+                                              ? "hidden"
+                                              : platformMeta
+                                              ? getPlatformBadgeStyle(platformMeta.id)
+                                              : "bg-gray-800"
+                                          }`}
+                                          style={{
+                                            display: account.metadata?.profilePicture ? "none" : "flex",
+                                          }}
+                                        >
+                                          {platformMeta ? (
+                                            <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+                                              {platformMeta.icon}
+                                            </svg>
+                                          ) : (
                                             <span className="text-sm font-mono">
                                               {(platformMeta?.name || "?")[0]}
                                             </span>
-                                          </div>
-                                        )}
+                                          )}
+                                        </div>
                                         {platformMeta && (
-                                          <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-md flex items-center justify-center text-white shadow-lg bg-gray-900">
-                                            <PlatformIcon platform={platformMeta.id} />
+                                          <div className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-md flex items-center justify-center text-white shadow-lg ${getPlatformBadgeStyle(platformMeta.id)}`}>
+                                            <PlatformIconSmall platform={platformMeta.id} />
                                           </div>
                                         )}
                                       </div>
                                       <div className="flex-1 min-w-0">
-                                        <div className="font-medium font-mono text-sm text-white">
+                                        <div className="font-medium font-mono text-sm text-gray-900 dark:text-white">
                                           {platformMeta?.name || account.platform}
                                         </div>
                                         <div className="text-xs truncate font-mono text-gray-400">
                                           @{account.username || "account"}
                                         </div>
+                                        {isDisabled && (
+                                          <div className="text-xs text-red-400 font-mono mt-1">
+                                            PDF posts only supported on LinkedIn
+                                          </div>
+                                        )}
                                       </div>
                                     </div>
                                   </button>
