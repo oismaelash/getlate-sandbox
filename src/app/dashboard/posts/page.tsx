@@ -693,6 +693,20 @@ export default function PostsPage() {
     setMediaFiles(mediaFiles.filter((_, i) => i !== index));
   }
 
+  function resetCreatePostForm() {
+    setNewPostContent("");
+    setNewPostAccountId("");
+    setNewPostPublishNow(false);
+    setNewPostScheduledAt("");
+    setNewPostTimezone("America/Sao_Paulo");
+    setMediaFiles([]);
+    setShowTimezoneDropdown(false);
+    setTimezoneSearch("");
+    setSelectedProfileIdForPost(null);
+    setModalProfileSearch("");
+    setShowProfilesDropdown(false);
+  }
+
   function getInferredFormat(): string {
     if (mediaFiles.length === 0) return "";
     try {
@@ -789,13 +803,7 @@ export default function PostsPage() {
         }
 
         await loadData();
-        setNewPostContent("");
-        setNewPostAccountId("");
-        setNewPostPublishNow(false);
-        setNewPostScheduledAt("");
-        setMediaFiles([]);
-        setShowTimezoneDropdown(false);
-        setTimezoneSearch("");
+        resetCreatePostForm();
         setShowCreateModal(false);
       } else {
         const error = await res.json();
@@ -1746,18 +1754,17 @@ export default function PostsPage() {
                 <p className="text-gray-600 dark:text-gray-400 text-sm font-mono">create &amp; publish content</p>
               </div>
               <div className="flex items-center gap-2">
-                <button
+                {/* <button
                   type="button"
                   className="px-3 h-8 text-sm rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white font-mono"
                   title="Reuse a previous post"
                 >
                   Reuse
-                </button>
+                </button> */}
                 <button
                   type="button"
                   onClick={() => {
-                    setShowTimezoneDropdown(false);
-                    setTimezoneSearch("");
+                    resetCreatePostForm();
                     setShowCreateModal(false);
                   }}
                   className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
@@ -1821,13 +1828,127 @@ export default function PostsPage() {
                         </svg>
                       </div>
                       <div>
-                        <p className="text-gray-900 dark:text-white font-medium font-mono text-sm">upload media</p>
-                        <p className="text-gray-600 dark:text-gray-400 text-xs mt-1 font-mono">
-                          images/videos/PDFs up to 5GB each (LinkedIn PDFs ≤ 100MB)
-                        </p>
+                        {mediaFiles.length > 0 ? (
+                          <>
+                            <p className="text-gray-900 dark:text-white font-medium font-mono text-sm">
+                              {mediaFiles.length} new file(s) selected
+                            </p>
+                            <p className="text-gray-600 dark:text-gray-400 text-xs mt-1 font-mono">
+                              click to change
+                            </p>
+                          </>
+                        ) : (
+                          <>
+                            <p className="text-gray-900 dark:text-white font-medium font-mono text-sm">upload media</p>
+                            <p className="text-gray-600 dark:text-gray-400 text-xs mt-1 font-mono">
+                              images/videos/PDFs up to 5GB each (LinkedIn PDFs ≤ 100MB)
+                            </p>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
+
+                  {mediaFiles.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 font-mono">media preview</p>
+                      <div className="flex flex-wrap gap-3">
+                        {mediaFiles.map((file, index) => {
+                          const previewUrl = mediaPreviews[index];
+                          const name = file.name;
+                          const isVideo = file.type.startsWith("video/");
+                          const isPdf =
+                            file.type === "application/pdf" || name.toLowerCase().endsWith(".pdf");
+                          const label = isVideo ? "video" : isPdf ? "document" : "image";
+
+                          return (
+                            <div
+                              key={index}
+                              className="relative group w-full max-w-[200px]"
+                              draggable
+                            >
+                              {/* Media content */}
+                              {isVideo ? (
+                                <video
+                                  src={previewUrl}
+                                  className="w-full h-32 object-cover rounded-lg bg-gray-100 dark:bg-gray-800"
+                                  controls
+                                  playsInline
+                                />
+                              ) : isPdf ? (
+                                <div className="w-full h-32 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                                  <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+                                    <svg
+                                      className="w-5 h-5"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth="2"
+                                        d="M7 7h10M7 11h10M7 15h6M9 21h6a2 2 0 002-2V7.828a2 2 0 00-.586-1.414l-2.828-2.828A2 2 0 0012.172 3H9a2 2 0 00-2 2v14a2 2 0 002 2z"
+                                      ></path>
+                                    </svg>
+                                    <span className="text-xs font-mono truncate max-w-[10rem]">
+                                      {name}
+                                    </span>
+                                  </div>
+                                </div>
+                              ) : (
+                                <img
+                                  src={previewUrl}
+                                  alt={name}
+                                  className="w-full h-32 object-cover rounded-lg bg-gray-100 dark:bg-gray-800"
+                                />
+                              )}
+
+                              {/* Hover overlay label */}
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center pointer-events-none">
+                                <span className="text-white text-xs font-mono">{label}</span>
+                              </div>
+
+                              {/* Filename tooltip on hover (top-right) */}
+                              <div className="absolute top-2 right-2 bg-black/70 rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                <span className="text-white text-xs font-mono">{name}</span>
+                              </div>
+
+                              {/* NEW badge */}
+                              <div className="absolute top-2 left-2 bg-green-600 text-white text-xs rounded px-1.5 py-0.5 font-mono pointer-events-none">
+                                NEW
+                              </div>
+
+                              {/* Remove button */}
+                              <button
+                                type="button"
+                                className="absolute top-2 right-2 rounded-full p-1.5 bg-red-600 text-white shadow-md ring-1 ring-black/10 hover:bg-red-700 hover:shadow-lg transition dark:bg-red-700 dark:hover:bg-red-600 dark:ring-white/20 z-10"
+                                title="Remove this file"
+                                aria-label="Remove file"
+                                onClick={() => removeMediaFile(index)}
+                              >
+                                <svg
+                                  className="w-4 h-4"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <polyline points="3 6 5 6 21 6"></polyline>
+                                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+                                  <path d="M10 11v6"></path>
+                                  <path d="M14 11v6"></path>
+                                  <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
+                                </svg>
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-4 transition-opacity">
@@ -2281,8 +2402,7 @@ export default function PostsPage() {
                 type="button"
                 className="px-4 py-2 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-200 font-mono text-sm"
                 onClick={() => {
-                  setShowTimezoneDropdown(false);
-                  setTimezoneSearch("");
+                  resetCreatePostForm();
                   setShowCreateModal(false);
                 }}
               >
