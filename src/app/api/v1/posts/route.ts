@@ -278,8 +278,9 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Se agendado, criar job no BullMQ
+    // Criar job no BullMQ para processar publicação
     if (postStatus === "scheduled" && scheduledDate) {
+      // Post agendado: usar delay baseado na data de agendamento
       const queue = getPostSchedulerQueue();
       const delay = scheduledDate.getTime() - Date.now();
 
@@ -293,12 +294,27 @@ export async function POST(request: NextRequest) {
           }
         );
       } else {
-        // Se a data já passou, publicar imediatamente
-        await db.post.update({
-          where: { getlateId: post.getlateId },
-          data: { status: "published" },
-        });
+        // Se a data já passou, publicar imediatamente (com delay de 3 segundos)
+        await queue.add(
+          "publish-post",
+          { postId: post.getlateId },
+          {
+            delay: 3000, // 3 segundos
+            jobId: `post-${post.getlateId}`,
+          }
+        );
       }
+    } else if (postStatus === "published" && shouldPublishNow) {
+      // Publicar agora: criar job com delay de 3 segundos
+      const queue = getPostSchedulerQueue();
+      await queue.add(
+        "publish-post",
+        { postId: post.getlateId },
+        {
+          delay: 3000, // 3 segundos
+          jobId: `post-${post.getlateId}`,
+        }
+      );
     }
 
     // Retornar no formato GetLate
