@@ -74,7 +74,7 @@ export default function MockOAuthPage() {
       setAccounts(allAccounts);
     } catch (err) {
       console.error("Error loading accounts:", err);
-      setError("Erro ao carregar contas");
+      setError("Error loading accounts");
     } finally {
       setLoading(false);
     }
@@ -82,12 +82,12 @@ export default function MockOAuthPage() {
 
   async function handleCreateAccount() {
     if (!profileId) {
-      setError("profileId não encontrado na URL");
+      setError("profileId not found in URL");
       return;
     }
 
     if (!newAccountPlatform) {
-      setError("Platform é obrigatório");
+      setError("Platform is required");
       return;
     }
 
@@ -109,7 +109,7 @@ export default function MockOAuthPage() {
 
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.error || "Erro ao criar conta");
+        throw new Error(errorData.error || "Error creating account");
       }
 
       const data = await res.json();
@@ -124,7 +124,7 @@ export default function MockOAuthPage() {
       setNewAccountProfilePicture("");
     } catch (err) {
       console.error("Error creating account:", err);
-      setError(err instanceof Error ? err.message : "Erro ao criar conta");
+      setError(err instanceof Error ? err.message : "Error creating account");
     } finally {
       setCreating(false);
     }
@@ -132,12 +132,12 @@ export default function MockOAuthPage() {
 
   async function handleAuthorize() {
     if (!selectedAccountId) {
-      setError("Selecione uma conta para autorizar");
+      setError("Select an account to authorize");
       return;
     }
 
     if (!profileId) {
-      setError("profileId não encontrado na URL");
+      setError("profileId not found in URL");
       return;
     }
 
@@ -156,7 +156,7 @@ export default function MockOAuthPage() {
 
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.error || "Erro ao autorizar");
+        throw new Error(errorData.error || "Error authorizing");
       }
 
       if (redirectUrl) {
@@ -166,7 +166,7 @@ export default function MockOAuthPage() {
       }
     } catch (err) {
       console.error("Error authorizing:", err);
-      setError(err instanceof Error ? err.message : "Erro ao autorizar");
+      setError(err instanceof Error ? err.message : "Error authorizing");
     } finally {
       setAuthorizing(false);
     }
@@ -179,7 +179,7 @@ export default function MockOAuthPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#222222] text-white flex items-center justify-center">
-        <p className="text-gray-400 font-mono">Carregando contas...</p>
+        <p className="text-gray-400 font-mono">Loading accounts...</p>
       </div>
     );
   }
@@ -192,11 +192,11 @@ export default function MockOAuthPage() {
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-6 md:mb-8">
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold text-white mb-1 sm:mb-2 font-mono">
-                Autorizar Conexão
+                Authorize Connection
               </h1>
               <p className="text-gray-400 font-mono text-sm sm:text-base">
-                Selecione uma conta{platform ? ` (${platform})` : ""} para
-                conectar ao profile
+                Select an account{platform ? ` (${platform})` : ""} to
+                connect to the profile
               </p>
               {profileId && (
                 <p className="text-sm text-gray-400 mt-2 font-mono">
@@ -214,7 +214,7 @@ export default function MockOAuthPage() {
               style={showNewForm ? undefined : { backgroundColor: ACCENT }}
               type="button"
             >
-              {showNewForm ? "Cancelar" : "+ Criar Nova Conta"}
+              {showNewForm ? "Cancel" : "+ Create New Account"}
             </button>
           </div>
 
@@ -228,7 +228,7 @@ export default function MockOAuthPage() {
           {showNewForm && (
             <div className="bg-gray-900 border border-gray-700 rounded-lg p-6 mb-6">
               <h2 className="text-lg font-bold text-white mb-4 font-mono">
-                Nova Conta Social
+                New Social Account
               </h2>
               <div className="space-y-4">
                 <div>
@@ -274,7 +274,7 @@ export default function MockOAuthPage() {
                     value={newAccountDisplayName}
                     onChange={(e) => setNewAccountDisplayName(e.target.value)}
                     className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-2 focus:border-gray-600 focus:outline-none font-mono text-sm placeholder-gray-400"
-                    placeholder="Nome de exibição"
+                    placeholder="Display name"
                   />
                 </div>
                 <div>
@@ -297,14 +297,14 @@ export default function MockOAuthPage() {
                     style={{ backgroundColor: ACCENT }}
                     type="button"
                   >
-                    {creating ? "Criando..." : "Criar Conta"}
+                    {creating ? "Creating..." : "Create Account"}
                   </button>
                   <button
                     onClick={handleCloseForm}
                     type="button"
                     className="text-sm px-4 py-2 bg-gray-800 border border-gray-700 text-gray-300 rounded-lg hover:bg-gray-700 font-mono"
                   >
-                    Cancelar
+                    Cancel
                   </button>
                 </div>
               </div>
@@ -315,7 +315,7 @@ export default function MockOAuthPage() {
           {accounts.length === 0 && !showNewForm && (
             <div className="bg-gray-900 border border-gray-700 rounded-lg p-8 text-center">
               <p className="text-gray-400 font-mono mb-4">
-                Nenhuma conta{platform ? ` do tipo ${platform}` : ""} encontrada.
+                No account{platform ? ` of type ${platform}` : ""} found.
               </p>
               <button
                 onClick={() => setShowNewForm(true)}
@@ -323,7 +323,7 @@ export default function MockOAuthPage() {
                 style={{ backgroundColor: ACCENT }}
                 type="button"
               >
-                Criar sua primeira conta
+                Create your first account
               </button>
             </div>
           )}
@@ -381,7 +381,7 @@ export default function MockOAuthPage() {
                         </p>
                         {account.profileId && (
                           <p className="text-xs text-gray-500 mt-1 font-mono">
-                            Conectado ao profile: {account.profileId}
+                            Connected to profile: {account.profileId}
                           </p>
                         )}
                       </div>
@@ -396,7 +396,7 @@ export default function MockOAuthPage() {
                   type="button"
                   className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 text-gray-300 rounded-lg hover:bg-gray-700 font-mono text-sm transition-colors"
                 >
-                  Cancelar
+                  Cancel
                 </button>
                 <button
                   onClick={handleAuthorize}
@@ -405,7 +405,7 @@ export default function MockOAuthPage() {
                   className="flex-1 text-sm px-4 py-2 rounded-lg transition-colors font-mono text-black hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ backgroundColor: ACCENT }}
                 >
-                  {authorizing ? "Autorizando..." : "Autorizar"}
+                  {authorizing ? "Authorizing..." : "Authorize"}
                 </button>
               </div>
             </>

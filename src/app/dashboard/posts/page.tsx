@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { X, ChevronDown, Search, Check, Filter, Calendar, Users } from "lucide-react";
 import { inferContentType, type MediaItem } from "@/lib/post-utils";
+import { PlatformIcon, getPlatformBadgeStyle } from "@/lib/platform-icons";
 
 interface Profile {
   _id: string;
@@ -124,136 +125,11 @@ const PLATFORM_CHAR_LIMITS: Record<string, number> = {
 
 // Small platform icon for badges (scaled down)
 const PlatformIconSmall = ({ platform }: { platform: string }) => {
-  const iconPath = PLATFORMS.find((p) => p.id === platform)?.icon;
-  if (!iconPath) return null;
-  
   return (
     <div className="scale-[0.5]">
-      <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
-        {iconPath}
-      </svg>
+      <PlatformIcon platform={platform} size="md" />
     </div>
   );
-};
-
-// Get platform badge style
-const getPlatformBadgeStyle = (platform: string) => {
-  switch (platform) {
-    case "instagram":
-      return "bg-gradient-to-br from-purple-600 to-pink-500";
-    case "tiktok":
-      return "bg-black";
-    case "facebook":
-      return "bg-[#1877F2]";
-    case "youtube":
-      return "bg-[#FF0000]";
-    case "linkedin":
-      return "bg-[#0A66C2]";
-    case "twitter":
-      return "bg-black";
-    case "threads":
-      return "bg-black";
-    case "pinterest":
-      return "bg-[#E60023]";
-    case "reddit":
-      return "bg-[#FF4500]";
-    case "bluesky":
-      return "bg-[#1185FE]";
-    case "googlebusiness":
-      return "bg-gradient-to-br from-blue-500 to-green-500";
-    case "telegram":
-      return "bg-[#0088CC]";
-    case "snapchat":
-      return "bg-yellow-400";
-    default:
-      return "bg-gray-900";
-  }
-};
-
-// Platform icons for the empty state grid
-const PlatformIcon = ({ platform }: { platform: string }) => {
-  switch (platform) {
-    case "instagram":
-      return (
-        <svg className="w-10 h-10 md:w-14 md:h-14" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"></path>
-        </svg>
-      );
-    case "tiktok":
-      return (
-        <svg className="w-10 h-10 md:w-14 md:h-14" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"></path>
-        </svg>
-      );
-    case "facebook":
-      return (
-        <svg className="w-10 h-10 md:w-14 md:h-14" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"></path>
-        </svg>
-      );
-    case "youtube":
-      return (
-        <svg className="w-10 h-10 md:w-14 md:h-14" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"></path>
-        </svg>
-      );
-    case "linkedin":
-      return (
-        <svg className="w-10 h-10 md:w-14 md:h-14" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"></path>
-        </svg>
-      );
-    case "twitter":
-      return (
-        <svg className="w-10 h-10 md:w-14 md:h-14" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path>
-        </svg>
-      );
-    case "threads":
-      return (
-        <svg className="w-10 h-10 md:w-14 md:h-14" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12.186 24h-.007c-3.581-.024-6.334-1.205-8.184-3.509C2.35 18.44 1.5 15.586 1.472 12.01v-.017c.03-3.579.879-6.43 2.525-8.482C5.845 1.205 8.6.024 12.18 0h.014c2.746.02 5.043.725 6.826 2.098 1.677 1.29 2.858 3.13 3.509 5.467l-2.04.569c-1.104-3.96-3.898-5.984-8.304-6.015-2.91.022-5.11.936-6.54 2.717C4.307 6.504 3.616 8.914 3.589 12c.027 3.086.718 5.496 2.057 7.164 1.43 1.783 3.631 2.698 6.54 2.717 2.623-.02 4.358-.631 5.8-2.045 1.647-1.613 1.618-3.593 1.09-4.798-.31-.71-.873-1.3-1.634-1.75-.192 1.352-.622 2.446-1.284 3.272-.886 1.102-2.14 1.704-3.73 1.79-1.202.065-2.361-.218-3.259-.801-1.063-.689-1.685-1.74-1.752-2.964-.065-1.19.408-2.285 1.33-3.082.88-.76 2.119-1.207 3.583-1.291a13.853 13.853 0 0 1 3.02.142c-.126-.742-.375-1.332-.75-1.757-.513-.586-1.308-.883-2.359-.89h-.029c-.844 0-1.992.232-2.721 1.32L7.734 7.847c.98-1.454 2.568-2.256 4.478-2.256h.044c3.194.02 5.097 1.975 5.287 5.388.108.046.216.094.321.142 1.49.7 2.58 1.761 3.154 3.07.797 1.82.871 4.79-1.548 7.158-1.85 1.81-4.094 2.628-7.277 2.65Zm1.003-11.69c-.242 0-.487.007-.739.021-1.836.103-2.98.946-2.916 2.143.067 1.256 1.452 1.839 2.784 1.767 1.224-.065 2.818-.543 3.086-3.71a10.5 10.5 0 0 0-2.215-.221z"></path>
-        </svg>
-      );
-    case "pinterest":
-      return (
-        <svg className="w-10 h-10 md:w-14 md:h-14" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12.017 0C5.396 0 .029 5.367.029 11.987c0 5.079 3.158 9.417 7.618 11.162-.105-.949-.199-2.403.041-3.439.219-.937 1.406-5.957 1.406-5.957s-.359-.72-.359-1.781c0-1.663.967-2.911 2.168-2.911 1.024 0 1.518.769 1.518 1.688 0 1.029-.653 2.567-.992 3.992-.285 1.193.6 2.165 1.775 2.165 2.128 0 3.768-2.245 3.768-5.487 0-2.861-2.063-4.869-5.008-4.869-3.41 0-5.409 2.562-5.409 5.199 0 1.033.394 2.143.889 2.741.099.12.112.225.085.345-.09.375-.293 1.199-.334 1.363-.053.225-.172.271-.401.165-1.495-.69-2.433-2.878-2.433-4.646 0-3.776 2.748-7.252 7.92-7.252 4.158 0 7.392 2.967 7.392 6.923 0 4.135-2.607 7.462-6.233 7.462-1.214 0-2.354-.629-2.758-1.379l-.749 2.848c-.269 1.045-1.004 2.352-1.498 3.146 1.123.345 2.306.535 3.55.535 6.607 0 11.985-5.365 11.985-11.987C23.97 5.39 18.592.026 11.985.026L12.017 0z"></path>
-        </svg>
-      );
-    case "reddit":
-      return (
-        <svg className="w-10 h-10 md:w-14 md:h-14" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 0C5.373 0 0 5.373 0 12c0 3.314 1.343 6.314 3.515 8.485l-2.286 2.286C.775 23.225 1.097 24 1.738 24H12c6.627 0 12-5.373 12-12S18.627 0 12 0Zm4.388 3.199c1.104 0 1.999.895 1.999 1.999 0 1.105-.895 2-1.999 2-.946 0-1.739-.657-1.947-1.539v.002c-1.147.162-2.032 1.15-2.032 2.341v.007c1.776.067 3.4.567 4.686 1.363.473-.363 1.064-.58 1.707-.58 1.547 0 2.802 1.254 2.802 2.802 0 1.117-.655 2.081-1.601 2.531-.088 3.256-3.637 5.876-7.997 5.876-4.361 0-7.905-2.617-7.998-5.87-.954-.447-1.614-1.415-1.614-2.538 0-1.548 1.255-2.802 2.803-2.802.645 0 1.239.218 1.712.585 1.275-.79 2.881-1.291 4.64-1.365v-.01c0-1.663 1.263-3.034 2.88-3.207.188-.911.993-1.595 1.959-1.595Zm-8.085 8.376c-.784 0-1.459.78-1.506 1.797-.047 1.016.64 1.429 1.426 1.429.786 0 1.371-.369 1.418-1.385.047-1.017-.553-1.841-1.338-1.841Zm7.406 0c-.786 0-1.385.824-1.338 1.841.047 1.017.634 1.385 1.418 1.385.785 0 1.473-.413 1.426-1.429-.046-1.017-.721-1.797-1.506-1.797Zm-3.703 4.013c-.974 0-1.907.048-2.77.135-.147.015-.241.168-.183.305.483 1.154 1.622 1.964 2.953 1.964 1.33 0 2.47-.81 2.953-1.964.057-.137-.037-.29-.184-.305-.863-.087-1.795-.135-2.769-.135Z"></path>
-        </svg>
-      );
-    case "bluesky":
-      return (
-        <svg className="w-10 h-10 md:w-14 md:h-14" viewBox="0 0 600 530" fill="currentColor">
-          <path d="m135.72 44.03c66.496 49.921 138.02 151.14 164.28 205.46 26.262-54.316 97.782-155.54 164.28-205.46 47.98-36.021 125.72-63.892 125.72 24.795 0 17.712-10.155 148.79-16.111 170.07-20.703 73.984-96.144 92.854-163.25 81.433 117.3 19.964 147.14 86.092 82.697 152.22-122.39 125.59-175.91-31.511-189.63-71.766-2.514-7.3797-3.6904-10.832-3.7077-7.8964-0.0174-2.9357-1.1937 0.51669-3.7077 7.8964-13.714 40.255-67.233 197.36-189.63 71.766-64.444-66.128-34.605-132.26 82.697-152.22-67.108 11.421-142.55-7.4491-163.25-81.433-5.9562-21.282-16.111-152.36-16.111-170.07 0-88.687 77.742-60.816 125.72-24.795z"></path>
-        </svg>
-      );
-    case "googlebusiness":
-      return (
-        <svg className="w-10 h-10 md:w-14 md:h-14" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M3.273 1.636c-.736 0-1.363.492-1.568 1.16L0 9.272c0 1.664 1.336 3 3 3a3 3 0 003-3c0 1.664 1.336 3 3 3a3 3 0 003-3c0 1.65 1.35 3 3 3 1.664 0 3-1.336 3-3 0 1.664 1.336 3 3 3s3-1.336 3-3l-1.705-6.476a1.646 1.646 0 00-1.568-1.16zm8.729 9.326c-.604 1.063-1.703 1.81-3.002 1.81-1.304 0-2.398-.747-3-1.806-.604 1.06-1.702 1.806-3 1.806-.484 0-.944-.1-1.363-.277v8.232c0 .9.736 1.637 1.636 1.637h17.454c.9 0 1.636-.737 1.636-1.637v-8.232a3.48 3.48 0 01-1.363.277c-1.304 0-2.398-.746-3-1.804-.602 1.058-1.696 1.804-3 1.804-1.299 0-2.394-.75-2.998-1.81zm5.725 3.765c.808 0 1.488.298 2.007.782l-.859.859a1.623 1.623 0 00-1.148-.447c-.98 0-1.772.827-1.772 1.806 0 .98.792 1.807 1.772 1.807.882 0 1.485-.501 1.615-1.191h-1.615v-1.16h2.826c.035.196.054.4.054.613 0 1.714-1.147 2.931-2.88 2.931a3 3 0 010-6z"></path>
-        </svg>
-      );
-    case "telegram":
-      return (
-        <svg className="w-10 h-10 md:w-14 md:h-14" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M20.665 3.717l-17.73 6.837c-1.21.486-1.203 1.161-.222 1.462l4.552 1.42 10.532-6.645c.498-.303.953-.14.579.192l-8.533 7.701h-.002l.002.001-.314 4.692c.46 0 .663-.211.921-.46l2.211-2.15 4.599 3.397c.848.467 1.457.227 1.668-.785l3.019-14.228c.309-1.239-.473-1.8-1.282-1.434z"></path>
-        </svg>
-      );
-    case "snapchat":
-      return (
-        <svg className="w-10 h-10 md:w-14 md:h-14" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12.206.793c.99 0 4.347.276 5.93 3.821.529 1.193.403 3.219.299 4.847l-.003.06c-.012.18-.022.345-.03.51.075.045.203.09.401.09.3-.016.659-.12 1.033-.301.165-.088.344-.104.464-.104.182 0 .359.029.509.09.45.149.734.479.734.838.015.449-.39.839-1.213 1.168-.089.029-.209.075-.344.119-.45.135-1.139.36-1.333.81-.09.224-.061.524.12.868l.015.015c.06.136 1.526 3.475 4.791 4.014.255.044.435.27.42.509 0 .075-.015.149-.045.225-.24.569-1.273.988-3.146 1.271-.059.091-.12.375-.164.57-.029.179-.074.36-.134.553-.076.271-.27.405-.555.405h-.03c-.135 0-.313-.031-.538-.074-.36-.075-.765-.135-1.273-.135-.3 0-.599.015-.913.074-.6.104-1.123.464-1.723.884-.853.599-1.826 1.288-3.294 1.288-.06 0-.119-.015-.18-.015h-.149c-1.468 0-2.427-.675-3.279-1.288-.599-.42-1.107-.779-1.707-.884-.314-.045-.629-.074-.928-.074-.54 0-.958.089-1.272.149-.211.043-.391.074-.54.074-.374 0-.523-.224-.583-.42-.061-.192-.09-.389-.135-.567-.046-.181-.105-.494-.166-.57-1.918-.222-2.95-.642-3.189-1.226-.031-.063-.052-.12-.063-.18-.015-.045-.015-.104-.015-.165.015-.239.21-.465.465-.509 3.257-.539 4.731-3.879 4.791-4.02l.016-.029c.18-.345.224-.645.119-.869-.195-.434-.884-.658-1.332-.809-.121-.029-.24-.074-.346-.119-.732-.27-1.226-.63-1.2-1.093.03-.464.491-.838.991-.838.105 0 .359.015.509.09.45.18.811.271 1.08.286.21 0 .324-.045.375-.104-.015-.18-.03-.359-.045-.539-.105-1.809-.27-4.079.254-5.272C7.717 1.069 11.066.793 12.041.793h.166z"></path>
-        </svg>
-      );
-    default:
-      return null;
-  }
 };
 
 // Platform hover colors
@@ -722,7 +598,7 @@ export default function PostsPage() {
 
   function handleOpenConnectModal(platformId: string) {
     if (!defaultProfile) {
-      alert("Crie um perfil em Connections antes de conectar uma conta.");
+      alert("Create a profile in Connections before connecting an account.");
       return;
     }
     setSelectedPlatform(platformId);
@@ -755,11 +631,11 @@ export default function PostsPage() {
         setSelectedPlatform("");
       } else {
         const error = await res.json();
-        alert(error.error || "Erro ao criar conta");
+        alert(error.error || "Error creating account");
       }
     } catch (error) {
       console.error("Error creating account:", error);
-      alert("Erro ao criar conta");
+      alert("Error creating account");
     } finally {
       setCreatingAccount(false);
     }
@@ -820,23 +696,23 @@ export default function PostsPage() {
       if (contentType === "carousel") return "Carousel";
       return "";
     } catch {
-      return "Erro ao inferir formato";
+      return "Error inferring format";
     }
   }
 
   async function handleCreate() {
     if (mediaFiles.length === 0) {
-      alert("Selecione pelo menos um arquivo de mídia");
+      alert("Select at least one media file");
       return;
     }
 
     if (selectedProfileIdForPost.length === 0) {
-      alert("Selecione pelo menos um perfil");
+      alert("Select at least one profile");
       return;
     }
 
     if (!newPostPublishNow && !newPostScheduledAt) {
-      alert("Selecione uma data para agendamento");
+      alert("Select a date for scheduling");
       return;
     }
 
@@ -867,12 +743,12 @@ export default function PostsPage() {
           
           if (contentLength > mostRestrictive.limit) {
             const overLimit = contentLength - mostRestrictive.limit;
-            const message = `O conteúdo excede o limite de caracteres da plataforma mais restritiva.\n\n` +
-              `Plataforma: ${mostRestrictive.platformName}\n` +
-              `Limite: ${mostRestrictive.limit} caracteres\n` +
-              `Seu conteúdo: ${contentLength} caracteres\n` +
-              `Excesso: ${overLimit} caracteres\n\n` +
-              `Por favor, reduza o conteúdo para continuar.`;
+            const message = `Content exceeds the character limit of the most restrictive platform.\n\n` +
+              `Platform: ${mostRestrictive.platformName}\n` +
+              `Limit: ${mostRestrictive.limit} characters\n` +
+              `Your content: ${contentLength} characters\n` +
+              `Excess: ${overLimit} characters\n\n` +
+              `Please reduce the content to continue.`;
             
             alert(message);
             return;
@@ -899,7 +775,7 @@ export default function PostsPage() {
 
         if (!uploadRes.ok) {
           const error = await uploadRes.json();
-          throw new Error(error.error || "Erro ao fazer upload do arquivo");
+          throw new Error(error.error || "Error uploading file");
         }
 
         return await uploadRes.json();
@@ -933,47 +809,47 @@ export default function PostsPage() {
       if (res.ok) {
         const result = await res.json();
         
-        // Tratar resposta que pode ser sucesso total, parcial ou erro
+        // Handle response that can be total success, partial success, or error
         if (result.success === false && result.posts?.length === 0) {
-          // Nenhum post foi criado
-          let errorMessage = result.error || "Erro ao criar posts";
+          // No posts were created
+          let errorMessage = result.error || "Error creating posts";
           if (result.details) {
             errorMessage += `\n\n${result.details}`;
           }
           if (result.errors && result.errors.length > 0) {
-            errorMessage += "\n\nErros:\n" + result.errors.map((e: any) => 
+            errorMessage += "\n\nErrors:\n" + result.errors.map((e: any) => 
               `- ${e.platform}: ${e.error}${e.details ? ` (${JSON.stringify(e.details)})` : ""}`
             ).join("\n");
           }
           if (result.skipped && result.skipped.length > 0) {
-            errorMessage += "\n\nContas puladas:\n" + result.skipped.map((s: any) => 
+            errorMessage += "\n\nSkipped accounts:\n" + result.skipped.map((s: any) => 
               `- ${s.platform}: ${s.reason}`
             ).join("\n");
           }
           alert(errorMessage);
         } else if (result.posts && result.posts.length > 0) {
-          // Posts foram criados (total ou parcial)
+          // Posts were created (total or partial)
           const successCount = result.posts.length;
           const totalAttempted = successCount + (result.errors?.length || 0) + (result.skipped?.length || 0);
           
           if (result.errors && result.errors.length > 0) {
-            // Sucesso parcial
-            let message = `${successCount} de ${totalAttempted} posts criados com sucesso.\n\n`;
+            // Partial success
+            let message = `${successCount} of ${totalAttempted} posts created successfully.\n\n`;
             if (result.errors.length > 0) {
-              message += "Erros:\n" + result.errors.map((e: any) => 
+              message += "Errors:\n" + result.errors.map((e: any) => 
                 `- ${e.platform}: ${e.error}`
               ).join("\n") + "\n\n";
             }
             if (result.skipped && result.skipped.length > 0) {
-              message += "Contas puladas:\n" + result.skipped.map((s: any) => 
+              message += "Skipped accounts:\n" + result.skipped.map((s: any) => 
                 `- ${s.platform}: ${s.reason}`
               ).join("\n");
             }
             alert(message);
           } else {
-            // Sucesso total
+            // Total success
             if (result.skipped && result.skipped.length > 0) {
-              alert(`${successCount} posts criados com sucesso.\n\n${result.skipped.length} conta(s) foram puladas (não suportam o tipo de mídia).`);
+              alert(`${successCount} posts created successfully.\n\n${result.skipped.length} account(s) were skipped (do not support the media type).`);
             }
           }
 
@@ -981,22 +857,22 @@ export default function PostsPage() {
           resetCreatePostForm();
           setShowCreateModal(false);
         } else {
-          // Resposta inesperada
-          alert("Posts criados, mas formato de resposta inesperado.");
+          // Unexpected response
+          alert("Posts created, but unexpected response format.");
           await loadData();
           resetCreatePostForm();
           setShowCreateModal(false);
         }
       } else {
         const error = await res.json();
-        alert(error.error || "Erro ao criar posts");
+        alert(error.error || "Error creating posts");
       }
     } catch (error) {
       console.error("Error creating post:", error);
       alert(
         error instanceof Error
           ? error.message
-          : "Erro ao criar post"
+          : "Error creating post"
       );
     } finally {
       setCreating(false);
@@ -1004,7 +880,7 @@ export default function PostsPage() {
   }
 
   async function handleDelete(postId: string) {
-    if (!confirm("Tem certeza que deseja deletar este post?")) return;
+    if (!confirm("Are you sure you want to delete this post?")) return;
 
     setDeleting(postId);
     try {
@@ -1019,11 +895,11 @@ export default function PostsPage() {
         }
       } else {
         const error = await res.json();
-        alert(error.error || "Erro ao deletar post");
+        alert(error.error || "Error deleting post");
       }
     } catch (error) {
       console.error("Error deleting post:", error);
-      alert("Erro ao deletar post");
+      alert("Error deleting post");
     } finally {
       setDeleting(null);
     }
@@ -1472,7 +1348,7 @@ export default function PostsPage() {
 
         {/* Main content area */}
         {loading ? (
-          <div className="text-center py-8 text-gray-600 dark:text-gray-400">Carregando...</div>
+          <div className="text-center py-8 text-gray-600 dark:text-gray-400">Loading...</div>
         ) : !hasConnectedAccounts ? (
           /* Empty state when no accounts are connected */
           <div
@@ -1494,7 +1370,7 @@ export default function PostsPage() {
                     data-platform={platform.id}
                     title={`Connect ${platform.name}`}
                   >
-                    <PlatformIcon platform={platform.id} />
+                    <PlatformIcon platform={platform.id} size="xl" />
                   </button>
                 ))}
               </div>
@@ -1728,17 +1604,17 @@ export default function PostsPage() {
                       <p className="text-gray-700 dark:text-gray-300 mb-2">{post.content}</p>
                     )}
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {post.socialAccount.platform} - @{post.socialAccount.username || "sem username"} (
+                      {post.socialAccount.platform} - @{post.socialAccount.username || "no username"} (
                       {post.socialAccount.profile.name})
                     </p>
                     {post.scheduledFor && (
                       <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        Agendado para: {new Date(post.scheduledFor).toLocaleString("pt-BR")}
+                        Scheduled for: {new Date(post.scheduledFor).toLocaleString("en-US")}
                       </p>
                     )}
                     <p className="text-xs text-gray-400 mt-2 font-mono">{post._id}</p>
                     <p className="text-xs text-gray-400 mt-1">
-                      Criado em: {new Date(post.createdAt).toLocaleString("pt-BR")}
+                      Created at: {new Date(post.createdAt).toLocaleString("en-US")}
                     </p>
                   </div>
                   <button
@@ -1749,7 +1625,7 @@ export default function PostsPage() {
                     disabled={deleting === post._id}
                     className="ml-4 px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200 disabled:opacity-50"
                   >
-                    {deleting === post._id ? "Deletando..." : "Deletar"}
+                    {deleting === post._id ? "Deleting..." : "Delete"}
                   </button>
                 </div>
               </div>
@@ -1769,7 +1645,7 @@ export default function PostsPage() {
             >
               <div className="p-6">
                 <div className="flex justify-between items-start mb-4">
-                  <h2 className="text-2xl font-bold">Detalhes do Post</h2>
+                  <h2 className="text-2xl font-bold">Post Details</h2>
                   <button
                     onClick={() => setSelectedPost(null)}
                     className="text-gray-500 hover:text-gray-700 text-2xl"
@@ -1779,7 +1655,7 @@ export default function PostsPage() {
                 </div>
 
                 {loadingPostDetails ? (
-                  <div className="text-center py-8">Carregando detalhes...</div>
+                  <div className="text-center py-8">Loading details...</div>
                 ) : (
                   <div className="space-y-4">
                     <div>
@@ -1799,16 +1675,16 @@ export default function PostsPage() {
                     </div>
 
                     <div>
-                      <label className="text-sm font-medium text-gray-500">Conteúdo</label>
+                      <label className="text-sm font-medium text-gray-500">Content</label>
                       <p className="mt-1 text-gray-900 whitespace-pre-wrap">
-                        {selectedPost.content || <span className="text-gray-400">Sem conteúdo</span>}
+                        {selectedPost.content || <span className="text-gray-400">No content</span>}
                       </p>
                     </div>
 
                     {selectedPost.mediaItems && Array.isArray(selectedPost.mediaItems) && selectedPost.mediaItems.length > 0 && (
                       <div>
                         <label className="text-sm font-medium text-gray-500 mb-2 block">
-                          Mídia ({selectedPost.mediaItems.length} item{selectedPost.mediaItems.length > 1 ? "s" : ""})
+                          Media ({selectedPost.mediaItems.length} item{selectedPost.mediaItems.length > 1 ? "s" : ""})
                         </label>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                           {selectedPost.mediaItems.map((item: MediaItem, index: number) => {
@@ -1826,7 +1702,7 @@ export default function PostsPage() {
                                       {item.filename || `Item ${index + 1}`}
                                     </div>
                                     <div className="text-xs text-gray-400 mt-1">
-                                      {isVideo ? "Vídeo" : "Imagem"} (Mock)
+                                      {isVideo ? "Video" : "Image"} (Mock)
                                     </div>
                                   </div>
                                 ) : isVideo ? (
@@ -1848,7 +1724,7 @@ export default function PostsPage() {
                                     onError={(e) => {
                                       console.error("Error loading image:", item.url);
                                       const target = e.target as HTMLImageElement;
-                                      target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%23ddd' width='200' height='200'/%3E%3Ctext fill='%23999' font-family='sans-serif' font-size='14' x='50%25' y='50%25' text-anchor='middle' dy='.3em'%3EImagem não encontrada%3C/text%3E%3C/svg%3E";
+                                      target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%23ddd' width='200' height='200'/%3E%3Ctext fill='%23999' font-family='sans-serif' font-size='14' x='50%25' y='50%25' text-anchor='middle' dy='.3em'%3EImage not found%3C/text%3E%3C/svg%3E";
                                     }}
                                   />
                                 )}
@@ -1871,9 +1747,9 @@ export default function PostsPage() {
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="text-sm font-medium text-gray-500">Conta Social</label>
+                        <label className="text-sm font-medium text-gray-500">Social Account</label>
                         <p className="mt-1 text-gray-900">
-                          {selectedPost.socialAccount.platform} - @{selectedPost.socialAccount.username || "sem username"}
+                          {selectedPost.socialAccount.platform} - @{selectedPost.socialAccount.username || "no username"}
                         </p>
                         <p className="text-xs text-gray-500 mt-1">
                           Profile: {selectedPost.socialAccount.profile.name}
@@ -1882,9 +1758,9 @@ export default function PostsPage() {
 
                       {selectedPost.scheduledFor && (
                         <div>
-                          <label className="text-sm font-medium text-gray-500">Agendamento</label>
+                          <label className="text-sm font-medium text-gray-500">Scheduled</label>
                           <p className="mt-1 text-gray-900">
-                            {new Date(selectedPost.scheduledFor).toLocaleString("pt-BR")}
+                            {new Date(selectedPost.scheduledFor).toLocaleString("en-US")}
                           </p>
                           {selectedPost.timezone && (
                             <p className="text-xs text-gray-500 mt-1">
@@ -1897,15 +1773,15 @@ export default function PostsPage() {
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="text-sm font-medium text-gray-500">ID do Post</label>
+                        <label className="text-sm font-medium text-gray-500">Post ID</label>
                         <p className="mt-1 text-xs font-mono text-gray-600 break-all">
                           {selectedPost._id}
                         </p>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-500">Criado em</label>
+                        <label className="text-sm font-medium text-gray-500">Created at</label>
                         <p className="mt-1 text-gray-900">
-                          {new Date(selectedPost.createdAt).toLocaleString("pt-BR")}
+                          {new Date(selectedPost.createdAt).toLocaleString("en-US")}
                         </p>
                       </div>
                     </div>
@@ -2738,7 +2614,7 @@ export default function PostsPage() {
                   value={newAccountDisplayName}
                   onChange={(e) => setNewAccountDisplayName(e.target.value)}
                   className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white rounded-lg px-4 py-2 focus:border-gray-300 dark:border-gray-600 focus:outline-none font-mono text-sm"
-                  placeholder="Nome de exibição"
+                  placeholder="Display name"
                 />
               </div>
 

@@ -77,11 +77,11 @@ export default function ProfilesPage() {
         setShowNewForm(false);
       } else {
         const error = await res.json();
-        alert(error.error || "Erro ao criar profile");
+        alert(error.error || "Error creating profile");
       }
     } catch (error) {
       console.error("Error creating profile:", error);
-      alert("Erro ao criar profile");
+      alert("Error creating profile");
     } finally {
       setCreating(false);
     }
@@ -124,19 +124,19 @@ export default function ProfilesPage() {
       window.location.href = mockOAuthUrl.toString();
     } catch (error) {
       console.error("Error connecting:", error);
-      alert(error instanceof Error ? error.message : "Erro ao conectar conta");
+      alert(error instanceof Error ? error.message : "Error connecting account");
       setConnectingProfileId(null);
     }
   }
 
   async function handleDelete(profileId: string, socialAccountsCount: number) {
-    // Verificar se há social accounts conectadas
+    // Check if there are connected social accounts
     if (socialAccountsCount > 0) {
-      alert("Não é possível excluir o profile. Exclua primeiro todas as contas sociais conectadas.");
+      alert("Cannot delete the profile. Please delete all connected social accounts first.");
       return;
     }
 
-    if (!confirm("Tem certeza que deseja excluir este profile?")) {
+    if (!confirm("Are you sure you want to delete this profile?")) {
       return;
     }
 
@@ -151,11 +151,11 @@ export default function ProfilesPage() {
         setProfiles(profiles.filter((p) => p._id !== profileId));
       } else {
         const error = await res.json();
-        alert(error.error || "Erro ao excluir profile");
+        alert(error.error || "Error deleting profile");
       }
     } catch (error) {
       console.error("Error deleting profile:", error);
-      alert("Erro ao excluir profile");
+      alert("Error deleting profile");
     } finally {
       setDeletingProfileId(null);
     }
@@ -166,7 +166,7 @@ export default function ProfilesPage() {
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Profiles</h1>
-          <p className="text-gray-600">Gerencie seus perfis GetLate</p>
+          <p className="text-gray-600">Manage your GetLate profiles</p>
         </div>
 
         <div className="mb-6">
@@ -174,31 +174,31 @@ export default function ProfilesPage() {
             onClick={() => setShowNewForm(!showNewForm)}
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
           >
-            {showNewForm ? "Cancelar" : "Criar Novo Profile"}
+            {showNewForm ? "Cancel" : "Create New Profile"}
           </button>
         </div>
 
         {showNewForm && (
           <div className="bg-white p-6 rounded-lg shadow mb-6">
-            <h2 className="text-xl font-semibold mb-4">Novo Profile</h2>
+            <h2 className="text-xl font-semibold mb-4">New Profile</h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Nome *</label>
+                <label className="block text-sm font-medium mb-1">Name *</label>
                 <input
                   type="text"
                   value={newProfileName}
                   onChange={(e) => setNewProfileName(e.target.value)}
                   className="w-full px-3 py-2 border rounded"
-                  placeholder="Ex: Meu Perfil"
+                  placeholder="e.g., My Profile"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Descrição</label>
+                <label className="block text-sm font-medium mb-1">Description</label>
                 <textarea
                   value={newProfileDescription}
                   onChange={(e) => setNewProfileDescription(e.target.value)}
                   className="w-full px-3 py-2 border rounded"
-                  placeholder="Descrição opcional"
+                  placeholder="Optional description"
                   rows={3}
                 />
               </div>
@@ -207,17 +207,17 @@ export default function ProfilesPage() {
                 disabled={creating || !newProfileName.trim()}
                 className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
               >
-                {creating ? "Criando..." : "Criar"}
+                {creating ? "Creating..." : "Create"}
               </button>
             </div>
           </div>
         )}
 
         {loading ? (
-          <div className="text-center py-8">Carregando...</div>
+          <div className="text-center py-8">Loading...</div>
         ) : profiles.length === 0 ? (
           <div className="bg-white p-6 rounded-lg shadow text-center text-gray-500">
-            Nenhum profile criado ainda
+            No profiles created yet
           </div>
         ) : (
           <div className="space-y-4">
@@ -241,7 +241,7 @@ export default function ProfilesPage() {
                         handleCopyId(profile._id);
                       }}
                       className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition"
-                      title="Copiar ID"
+                      title="Copy ID"
                     >
                       {copiedId === profile._id ? (
                         <svg
@@ -276,7 +276,7 @@ export default function ProfilesPage() {
                   </div>
                   <div className="flex items-center gap-3">
                     <p className="text-sm text-gray-400">
-                      {profile._count?.socialAccounts || 0} conta(s) conectada(s)
+                      {profile._count?.socialAccounts || 0} account(s) connected
                     </p>
                     <div className="flex items-center gap-2">
                       <div className="relative platform-menu-container">
@@ -290,12 +290,12 @@ export default function ProfilesPage() {
                           }}
                           disabled={connectingProfileId === profile._id}
                           className="px-3 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                          title="Conectar Conta"
+                          title="Connect Account"
                         >
                           {connectingProfileId === profile._id ? (
-                            "Conectando..."
+                            "Connecting..."
                           ) : (
-                            "Conectar Conta"
+                            "Connect Account"
                           )}
                         </button>
                         {showPlatformMenu === profile._id && (
@@ -328,10 +328,10 @@ export default function ProfilesPage() {
                         }}
                         disabled={deletingProfileId === profile._id}
                         className="px-3 py-1.5 text-sm bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                        title="Excluir Profile"
+                        title="Delete Profile"
                       >
                         {deletingProfileId === profile._id ? (
-                          "Excluindo..."
+                          "Deleting..."
                         ) : (
                           <svg
                             className="w-4 h-4"
@@ -352,7 +352,7 @@ export default function ProfilesPage() {
                   </div>
                 </div>
                 <p className="text-xs text-gray-400 mt-2">
-                  Criado em: {new Date(profile.createdAt).toLocaleString("pt-BR")}
+                  Created at: {new Date(profile.createdAt).toLocaleString("en-US")}
                 </p>
               </Link>
             ))}

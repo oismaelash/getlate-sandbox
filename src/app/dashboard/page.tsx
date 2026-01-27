@@ -48,11 +48,11 @@ export default function DashboardPage() {
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">GetLate Sandbox</h1>
-          <p className="text-gray-600 dark:text-gray-400">Dashboard de gerenciamento</p>
+          <p className="text-gray-600 dark:text-gray-400">Management dashboard</p>
         </div>
 
         {loading ? (
-          <div className="text-center py-8">Carregando...</div>
+          <div className="text-center py-8">Loading...</div>
         ) : (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -86,14 +86,14 @@ export default function DashboardPage() {
             </div>
 
             <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
-              <h2 className="text-xl font-semibold mb-4">Navegação Rápida</h2>
+              <h2 className="text-xl font-semibold mb-4">Quick Navigation</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Link
                   href="/dashboard/api-keys"
                   className="p-4 border rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition"
                 >
                   <h3 className="font-semibold mb-1">API Keys</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Gerencie suas chaves de API</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Manage your API keys</p>
                 </Link>
 
                 <Link
@@ -101,7 +101,7 @@ export default function DashboardPage() {
                   className="p-4 border rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition"
                 >
                   <h3 className="font-semibold mb-1">Profiles</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Gerencie seus perfis GetLate</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Manage your GetLate profiles</p>
                 </Link>
 
                 <Link
@@ -109,7 +109,7 @@ export default function DashboardPage() {
                   className="p-4 border rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition"
                 >
                   <h3 className="font-semibold mb-1">Social Accounts</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Gerencie contas sociais conectadas</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Manage connected social accounts</p>
                 </Link>
 
                 <Link
@@ -117,18 +117,18 @@ export default function DashboardPage() {
                   className="p-4 border rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition"
                 >
                   <h3 className="font-semibold mb-1">Posts</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Crie e gerencie posts agendados</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Create and manage scheduled posts</p>
                 </Link>
               </div>
             </div>
 
             <div className="mt-8 bg-blue-50 dark:bg-blue-900/20 p-6 rounded-lg">
-              <h2 className="text-lg font-semibold mb-2">Como usar</h2>
+              <h2 className="text-lg font-semibold mb-2">How to use</h2>
               <ol className="list-decimal list-inside space-y-2 text-sm text-gray-700 dark:text-gray-300">
-                <li>Crie uma API Key na página de API Keys</li>
-                <li>Crie um Profile na página de Profiles</li>
-                <li>Conecte uma Social Account na página de Accounts</li>
-                <li>Crie e agende posts na página de Posts</li>
+                <li>Create an API Key on the API Keys page</li>
+                <li>Create a Profile on the Profiles page</li>
+                <li>Connect a Social Account on the Accounts page</li>
+                <li>Create and schedule posts on the Posts page</li>
               </ol>
             </div>
           </>

@@ -108,18 +108,18 @@ export default function AccountsPage() {
         setShowNewForm(false);
       } else {
         const error = await res.json();
-        alert(error.error || "Erro ao criar account");
+        alert(error.error || "Error creating account");
       }
     } catch (error) {
       console.error("Error creating account:", error);
-      alert("Erro ao criar account");
+      alert("Error creating account");
     } finally {
       setCreating(false);
     }
   }
 
   async function handleDelete(accountId: string) {
-    if (!confirm("Tem certeza que deseja remover esta conta?")) return;
+    if (!confirm("Are you sure you want to remove this account?")) return;
 
     setDeleting(accountId);
     try {
@@ -131,11 +131,11 @@ export default function AccountsPage() {
         setAccounts(accounts.filter((a) => a._id !== accountId));
       } else {
         const error = await res.json();
-        alert(error.error || "Erro ao remover account");
+        alert(error.error || "Error removing account");
       }
     } catch (error) {
       console.error("Error deleting account:", error);
-      alert("Erro ao remover account");
+      alert("Error removing account");
     } finally {
       setDeleting(null);
     }
@@ -148,12 +148,12 @@ export default function AccountsPage() {
           <div className="flex items-center justify-between mb-2">
             <div>
               <h1 className="text-3xl font-bold mb-2">Social Accounts</h1>
-              <p className="text-gray-600">Gerencie suas contas sociais conectadas</p>
+              <p className="text-gray-600">Manage your connected social accounts</p>
             </div>
             {profileIdFilter && (
               <div className="flex items-center gap-2">
                 <span className="text-sm text-gray-600">
-                  Filtrado por profile:{" "}
+                  Filtered by profile:{" "}
                   <span className="font-mono text-xs">
                     {profiles.find((p) => p._id === profileIdFilter)?.name || profileIdFilter}
                   </span>
@@ -162,7 +162,7 @@ export default function AccountsPage() {
                   href="/dashboard/accounts"
                   className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition"
                 >
-                  Limpar filtro
+                  Clear filter
                 </Link>
               </div>
             )}
@@ -174,13 +174,13 @@ export default function AccountsPage() {
             onClick={() => setShowNewForm(!showNewForm)}
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
           >
-            {showNewForm ? "Cancelar" : "Conectar Nova Conta"}
+            {showNewForm ? "Cancel" : "Connect New Account"}
           </button>
         </div>
 
         {showNewForm && (
           <div className="bg-white p-6 rounded-lg shadow mb-6">
-            <h2 className="text-xl font-semibold mb-4">Nova Conta Social</h2>
+            <h2 className="text-xl font-semibold mb-4">New Social Account</h2>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1">Profile *</label>
@@ -189,7 +189,7 @@ export default function AccountsPage() {
                   onChange={(e) => setNewAccountProfileId(e.target.value)}
                   className="w-full px-3 py-2 border rounded"
                 >
-                  <option value="">Selecione um profile</option>
+                  <option value="">Select a profile</option>
                   {profiles.map((profile) => (
                     <option key={profile._id} value={profile._id}>
                       {profile.name}
@@ -227,7 +227,7 @@ export default function AccountsPage() {
                   value={newAccountDisplayName}
                   onChange={(e) => setNewAccountDisplayName(e.target.value)}
                   className="w-full px-3 py-2 border rounded"
-                  placeholder="Nome de exibição"
+                  placeholder="Display name"
                 />
               </div>
               <div>
@@ -245,19 +245,19 @@ export default function AccountsPage() {
                 disabled={creating || !newAccountProfileId || !newAccountPlatform}
                 className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
               >
-                {creating ? "Criando..." : "Criar"}
+                {creating ? "Creating..." : "Create"}
               </button>
             </div>
           </div>
         )}
 
         {loading ? (
-          <div className="text-center py-8">Carregando...</div>
+          <div className="text-center py-8">Loading...</div>
         ) : accounts.length === 0 ? (
           <div className="bg-white p-6 rounded-lg shadow text-center text-gray-500">
             {profileIdFilter
-              ? "Nenhuma conta conectada a este profile"
-              : "Nenhuma conta conectada ainda"}
+              ? "No accounts connected to this profile"
+              : "No accounts connected yet"}
           </div>
         ) : (
           <div className="space-y-4">
@@ -304,7 +304,7 @@ export default function AccountsPage() {
                         <p className="text-sm text-gray-500">Profile: {account.profile.name}</p>
                         <p className="text-xs text-gray-400 mt-2 font-mono">{account._id}</p>
                         <p className="text-xs text-gray-400 mt-1">
-                          Criado em: {new Date(account.createdAt).toLocaleString("pt-BR")}
+                          Created at: {new Date(account.createdAt).toLocaleString("en-US")}
                         </p>
                       </div>
                     </div>
@@ -313,7 +313,7 @@ export default function AccountsPage() {
                       disabled={deleting === account._id}
                       className="ml-4 px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200 disabled:opacity-50"
                     >
-                      {deleting === account._id ? "Removendo..." : "Remover"}
+                      {deleting === account._id ? "Removing..." : "Remove"}
                     </button>
                   </div>
                 </div>
