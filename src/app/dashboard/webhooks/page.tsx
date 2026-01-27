@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { RefreshCw, X, Check, Zap, Edit, Trash2, ChevronDown } from "lucide-react";
+import toast from "react-hot-toast";
 
 type Tab = "webhooks" | "logs";
 type FilterStatus = "all" | "success" | "failed";
@@ -163,13 +164,14 @@ export default function WebhooksPage() {
 
       if (res.ok) {
         await loadWebhooks();
+        toast.success("Webhook deleted");
       } else {
         const error = await res.json();
-        alert(error.error || "Failed to delete webhook");
+        toast.error(error.error || "Failed to delete webhook");
       }
     } catch (error) {
       console.error("Error deleting webhook:", error);
-      alert("Error deleting webhook");
+      toast.error("Error deleting webhook");
     }
   }
 
@@ -188,13 +190,14 @@ export default function WebhooksPage() {
 
       if (res.ok) {
         await loadWebhooks();
+        toast.success(webhook.enabled ? "Webhook disabled" : "Webhook enabled");
       } else {
         const error = await res.json();
-        alert(error.error || "Failed to update webhook");
+        toast.error(error.error || "Failed to update webhook");
       }
     } catch (error) {
       console.error("Error updating webhook:", error);
-      alert("Error updating webhook");
+      toast.error("Error updating webhook");
     }
   }
 
@@ -205,27 +208,26 @@ export default function WebhooksPage() {
       });
 
       if (res.ok) {
-        // Reload delivery logs to show the new test delivery
         await loadDeliveryLogs();
+        toast.success("Test webhook sent!");
       } else {
         const error = await res.json();
-        alert(error.error || "Failed to test webhook");
+        toast.error(error.error || "Failed to test webhook");
       }
     } catch (error) {
       console.error("Error testing webhook:", error);
-      alert("Error testing webhook");
+      toast.error("Error testing webhook");
     }
   }
 
   function toggleLogExpanded(logId: string) {
     setExpandedLogs((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(logId)) {
-        newSet.delete(logId);
-      } else {
-        newSet.add(logId);
+      if (prev.has(logId)) {
+        const next = new Set(prev);
+        next.delete(logId);
+        return next;
       }
-      return newSet;
+      return new Set([logId]);
     });
   }
 
@@ -293,9 +295,10 @@ export default function WebhooksPage() {
         if (res.ok) {
           await loadWebhooks();
           handleCloseForm();
+          toast.success("Webhook updated");
         } else {
           const error = await res.json();
-          alert(error.error || "Failed to update webhook");
+          toast.error(error.error || "Failed to update webhook");
         }
       } else {
         // Create new webhook
@@ -315,14 +318,15 @@ export default function WebhooksPage() {
         if (res.ok) {
           await loadWebhooks();
           handleCloseForm();
+          toast.success("Webhook created");
         } else {
           const error = await res.json();
-          alert(error.error || "Failed to create webhook");
+          toast.error(error.error || "Failed to create webhook");
         }
       }
     } catch (error) {
       console.error("Error saving webhook:", error);
-      alert("Error saving webhook");
+      toast.error("Error saving webhook");
     }
   }
 
@@ -555,9 +559,12 @@ export default function WebhooksPage() {
                       </button>
                     </div>
                   ) : (
-                    webhooks.map((webhook) => (
-                      <div key={webhook.id}>
-                        <div className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                    <>
+                      {webhooks.map((webhook) => (
+                        <div
+                          key={webhook.id}
+                          className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4"
+                        >
                           <div className="flex items-start justify-between">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-3 mb-2">
@@ -624,11 +631,12 @@ export default function WebhooksPage() {
                             </div>
                           </div>
                         </div>
-                        <div className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4 sm:p-6 mt-6">
-                          <h3 className="font-bold text-gray-900 dark:text-white mb-4 font-mono text-sm">
-                            Webhook Payload Example
-                          </h3>
-                          <pre className="text-xs overflow-x-auto bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4 rounded-lg font-mono text-gray-700 dark:text-gray-300">
+                      ))}
+                      <div className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4 sm:p-6 mt-6">
+                        <h3 className="font-bold text-gray-900 dark:text-white mb-4 font-mono text-sm">
+                          Webhook Payload Example
+                        </h3>
+                        <pre className="text-xs overflow-x-auto bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4 rounded-lg font-mono text-gray-700 dark:text-gray-300">
 {`{
   "event": "post.published",
   "post": {
@@ -647,10 +655,9 @@ export default function WebhooksPage() {
   },
   "timestamp": "2024-12-15T10:00:12Z"
 }`}
-                          </pre>
-                        </div>
+                        </pre>
                       </div>
-                    ))
+                    </>
                   )}
                 </div>
               </>
@@ -671,6 +678,10 @@ export default function WebhooksPage() {
                 </p>
               </div>
               <button
+                onClick={async () => {
+                  await loadDeliveryLogs();
+                  toast.success("Logs refreshed");
+                }}
                 className="px-4 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors font-mono text-sm flex items-center gap-2"
               >
                 <RefreshCw className="w-4 h-4" />
@@ -762,7 +773,9 @@ export default function WebhooksPage() {
                             {formatTimestamp(log.timestamp)}
                           </div>
                           <div className="flex items-center text-sm font-mono text-gray-600 dark:text-gray-400">
-                            {log.responseTime}ms
+                            {log.status === "failed" || log.responseTime == null
+                              ? "-"
+                              : `${log.responseTime}ms`}
                           </div>
                           <div className="flex items-center text-sm font-mono text-gray-600 dark:text-gray-400">
                             {log.attempts}
@@ -793,6 +806,16 @@ export default function WebhooksPage() {
                                 {log.url}
                               </code>
                             </div>
+                            {log.status === "failed" && log.response && (
+                              <div>
+                                <p className="text-sm font-mono text-red-600 dark:text-red-400 mb-1">
+                                  Error
+                                </p>
+                                <code className="block text-xs font-mono bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-3 py-2 rounded text-red-700 dark:text-red-300 overflow-x-auto">
+                                  {log.response}
+                                </code>
+                              </div>
+                            )}
                             <div>
                               <p className="text-sm font-mono text-gray-600 dark:text-gray-400 mb-1">
                                 Request Payload
@@ -801,14 +824,16 @@ export default function WebhooksPage() {
                                 {JSON.stringify(log.requestPayload, null, 2)}
                               </pre>
                             </div>
-                            <div>
-                              <p className="text-sm font-mono text-gray-600 dark:text-gray-400 mb-1">
-                                Response
-                              </p>
-                              <pre className="text-xs font-mono bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-3 rounded text-gray-700 dark:text-gray-300 overflow-x-auto max-h-64">
-                                {log.response}
-                              </pre>
-                            </div>
+                            {log.status === "success" && (
+                              <div>
+                                <p className="text-sm font-mono text-gray-600 dark:text-gray-400 mb-1">
+                                  Response
+                                </p>
+                                <pre className="text-xs font-mono bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-3 rounded text-gray-700 dark:text-gray-300 overflow-x-auto max-h-64">
+                                  {log.response || "—"}
+                                </pre>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
