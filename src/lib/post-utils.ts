@@ -1,5 +1,5 @@
 export interface MediaItem {
-  type: "image" | "video";
+  type: "image" | "video" | "document";
   url: string;
   filename: string;
   size: number;
@@ -12,6 +12,7 @@ export type ContentType = "post" | "reel" | "carousel";
  * Infere o contentType baseado nos mediaItems
  * - 1 imagem → post
  * - 1 vídeo → reel
+ * - 1 documento (PDF) → post
  * - 2+ imagens → carousel
  */
 export function inferContentType(mediaItems: MediaItem[]): ContentType {
@@ -24,7 +25,7 @@ export function inferContentType(mediaItems: MediaItem[]): ContentType {
     if (item.type === "video") {
       return "reel";
     }
-    if (item.type === "image") {
+    if (item.type === "image" || item.type === "document") {
       return "post";
     }
     throw new Error(`Tipo de mídia não suportado: ${item.type}`);

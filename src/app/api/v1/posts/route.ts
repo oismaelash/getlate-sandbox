@@ -7,6 +7,11 @@ import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
 import { randomBytes } from "crypto";
 import { Prisma } from "@prisma/client";
 import { validateUploadUrl, parseUploadUrl, moveFilesToPostDir } from "@/lib/upload";
+import {
+  validateCharLimit,
+  hasPdf,
+  supportsPdf,
+} from "@/lib/post-validation";
 
 export async function POST(request: NextRequest) {
   try {
@@ -39,7 +44,76 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "platforms is required" }, { status: 400 });
     }
 
-    // Extrair instagramAccountId do primeiro platform
+    // Validar todas as plataformas e contas
+    const platformErrors: Array<{
+      platform: string;
+      accountId: string;
+      error: string;
+    }> = [];
+
+    // Verificar se há PDFs
+    const hasPdfFiles = hasPdf(mediaItems as MediaItem[]);
+
+    // Validar cada plataforma
+    for (const platform of platforms) {
+      if (!platform.accountId) {
+        platformErrors.push({
+          platform: platform.platform || "unknown",
+          accountId: "unknown",
+          error: "accountId is required",
+        });
+        continue;
+      }
+
+      // Verificar se a conta existe
+      const account = await db.socialAccount.findUnique({
+        where: { getlateId: platform.accountId },
+      });
+
+      if (!account) {
+        platformErrors.push({
+          platform: platform.platform || "unknown",
+          accountId: platform.accountId,
+          error: "Account not found",
+        });
+        continue;
+      }
+
+      // Validar suporte a PDF
+      if (hasPdfFiles && !supportsPdf(account.platform)) {
+        platformErrors.push({
+          platform: account.platform,
+          accountId: account.getlateId,
+          error: "PDF files are not supported on this platform",
+        });
+        continue;
+      }
+
+      // Validar limite de caracteres
+      if (content) {
+        const validation = validateCharLimit(content, account.platform);
+        if (!validation.valid && validation.limit !== null) {
+          platformErrors.push({
+            platform: account.platform,
+            accountId: account.getlateId,
+            error: `Content exceeds character limit (${validation.limit} characters, got ${validation.actual})`,
+          });
+          continue;
+        }
+      }
+    }
+
+    if (platformErrors.length > 0) {
+      return NextResponse.json(
+        {
+          error: "Validation failed for one or more platforms",
+          details: platformErrors,
+        },
+        { status: 400 }
+      );
+    }
+
+    // Extrair accountId do primeiro platform (para compatibilidade com código existente)
     const firstPlatform = platforms[0];
     const instagramAccountId = firstPlatform?.accountId;
 
@@ -47,7 +121,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "accountId is required in platforms[0]" }, { status: 400 });
     }
 
-    // Verificar se account existe
+    // Verificar se account existe (já validado acima, mas mantido para compatibilidade)
     const account = await db.socialAccount.findUnique({
       where: { getlateId: instagramAccountId },
     });

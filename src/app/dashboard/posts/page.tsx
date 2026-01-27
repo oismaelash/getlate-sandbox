@@ -824,8 +824,8 @@ export default function PostsPage() {
       return;
     }
 
-    if (!newPostAccountId) {
-      alert("Selecione uma conta");
+    if (selectedProfileIdForPost.length === 0) {
+      alert("Selecione pelo menos um perfil");
       return;
     }
 
@@ -910,14 +910,14 @@ export default function PostsPage() {
         mimeType: result.mimeType,
       }));
 
-      // Criar post com URLs reais
+      // Criar posts com URLs reais
       const res = await fetch("/api/posts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           content: newPostContent || undefined,
           mediaItems,
-          accountId: newPostAccountId,
+          profileIds: selectedProfileIdForPost,
           publishNow: newPostPublishNow,
           scheduledAt: newPostPublishNow ? undefined : newPostScheduledAt,
           timezone: newPostPublishNow ? undefined : newPostTimezone,
@@ -925,21 +925,65 @@ export default function PostsPage() {
       });
 
       if (res.ok) {
-        const postData = await res.json();
-        const createdPostId = postData.post?._id || postData._id;
+        const result = await res.json();
+        
+        // Tratar resposta que pode ser sucesso total, parcial ou erro
+        if (result.success === false && result.posts?.length === 0) {
+          // Nenhum post foi criado
+          let errorMessage = result.error || "Erro ao criar posts";
+          if (result.details) {
+            errorMessage += `\n\n${result.details}`;
+          }
+          if (result.errors && result.errors.length > 0) {
+            errorMessage += "\n\nErros:\n" + result.errors.map((e: any) => 
+              `- ${e.platform}: ${e.error}${e.details ? ` (${JSON.stringify(e.details)})` : ""}`
+            ).join("\n");
+          }
+          if (result.skipped && result.skipped.length > 0) {
+            errorMessage += "\n\nContas puladas:\n" + result.skipped.map((s: any) => 
+              `- ${s.platform}: ${s.reason}`
+            ).join("\n");
+          }
+          alert(errorMessage);
+        } else if (result.posts && result.posts.length > 0) {
+          // Posts foram criados (total ou parcial)
+          const successCount = result.posts.length;
+          const totalAttempted = successCount + (result.errors?.length || 0) + (result.skipped?.length || 0);
+          
+          if (result.errors && result.errors.length > 0) {
+            // Sucesso parcial
+            let message = `${successCount} de ${totalAttempted} posts criados com sucesso.\n\n`;
+            if (result.errors.length > 0) {
+              message += "Erros:\n" + result.errors.map((e: any) => 
+                `- ${e.platform}: ${e.error}`
+              ).join("\n") + "\n\n";
+            }
+            if (result.skipped && result.skipped.length > 0) {
+              message += "Contas puladas:\n" + result.skipped.map((s: any) => 
+                `- ${s.platform}: ${s.reason}`
+              ).join("\n");
+            }
+            alert(message);
+          } else {
+            // Sucesso total
+            if (result.skipped && result.skipped.length > 0) {
+              alert(`${successCount} posts criados com sucesso.\n\n${result.skipped.length} conta(s) foram puladas (não suportam o tipo de mídia).`);
+            }
+          }
 
-        // Se o post foi criado com sucesso, renomear diretório de temp para o ID real
-        if (createdPostId && tempPostId.startsWith("temp-")) {
-          // Nota: Esta operação seria feita no backend, mas por enquanto
-          // os arquivos ficam no diretório temp. Podemos mover no backend se necessário.
+          await loadData();
+          resetCreatePostForm();
+          setShowCreateModal(false);
+        } else {
+          // Resposta inesperada
+          alert("Posts criados, mas formato de resposta inesperado.");
+          await loadData();
+          resetCreatePostForm();
+          setShowCreateModal(false);
         }
-
-        await loadData();
-        resetCreatePostForm();
-        setShowCreateModal(false);
       } else {
         const error = await res.json();
-        alert(error.error || "Erro ao criar post");
+        alert(error.error || "Erro ao criar posts");
       }
     } catch (error) {
       console.error("Error creating post:", error);
